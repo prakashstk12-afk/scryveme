@@ -6,6 +6,7 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+
 -- ─── Users ────────────────────────────────────────────────────
 -- Synced from Clerk via webhook on user.created / user.updated
 CREATE TABLE IF NOT EXISTS public.users (
