@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #060C1A;
+    color: #EDF0FF;
+    background-image: radial-gradient(
+      ellipse 90% 60% at 50% -5%,
+      rgba(64, 128, 255, 0.07) 0%,
+      transparent 65%
+    );
+    background-attachment: fixed;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent text-white font-display font-semibold px-6 py-3 rounded-xl
+           hover:brightness-110 active:scale-[0.98] transition-all duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
+           focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-elevated;
+    box-shadow: 0 4px 20px rgba(64, 128, 255, 0.3), 0 1px 4px rgba(0, 0, 0, 0.4);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: 0 6px 28px rgba(64, 128, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  .btn-secondary {
+    @apply bg-elevated text-primary border border-border font-display font-medium px-5 py-2.5 rounded-xl
+           hover:bg-subtle hover:border-border-bright active:scale-[0.98] transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-elevated;
+  }
+
+  .card {
+    @apply bg-elevated rounded-2xl border border-border p-6;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .card-glow {
+    @apply card;
+    border-color: rgba(64, 128, 255, 0.25);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 0 28px rgba(64, 128, 255, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .input-field {
+    @apply w-full bg-surface border border-border rounded-xl px-4 py-3 font-body text-primary
+           placeholder:text-dim focus:outline-none transition-all duration-200;
+  }
+
+  .input-field:focus {
+    border-color: rgba(64, 128, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(64, 128, 255, 0.08);
+  }
+
+  .section-label {
+    @apply text-xs font-display font-semibold tracking-widest uppercase text-secondary;
+  }
+
+  .tag {
+    @apply inline-flex items-center gap-1.5 text-xs font-display font-semibold px-3 py-1.5 rounded-full border;
+  }
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #6aaeff 0%, #4080ff 40%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Score ring */
+.score-ring-progress {
+  stroke-dashoffset: var(--target-offset, 440);
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+
+/* Staggered fade-up for result cards */
+.result-card {
+  opacity: 0;
+  animation: fadeUp 0.5s ease forwards;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading dots */
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.55); opacity: 0.25; }
+  40%           { transform: scale(1);    opacity: 1; }
+}
+
+.dot-1 { animation: dotPulse 1.2s ease infinite 0s; }
+.dot-2 { animation: dotPulse 1.2s ease infinite 0.2s; }
+.dot-3 { animation: dotPulse 1.2s ease infinite 0.4s; }
+
+/* WhatsApp share pulse */
+@keyframes waPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.35); }
+  50%       { box-shadow: 0 0 0 8px rgba(37, 211, 102, 0); }
+}
+
+.wa-pulse {
+  animation: waPulse 2.5s ease-in-out infinite;
+}
+
+/* Score bar fill animation */
+@keyframes barFill {
+  from { width: 0; }
+}
+
+.score-bar {
+  animation: barFill 0.9s cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
+  animation-delay: var(--bar-delay, 0ms);
+}
+
+/* Shimmer for loading tags */
+@keyframes shimmer {
+  0%   { background-position: -400% 0; }
+  100% { background-position: 400% 0; }
+}
+
+.shimmer-tag {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(64, 128, 255, 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #060C1A; }
+::-webkit-scrollbar-thumb { background: #1C2E4A; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #274060; }
