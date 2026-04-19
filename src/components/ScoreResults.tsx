@@ -21,20 +21,20 @@ const SECTION_LABELS: Record<string, string> = {
   formatting: 'Formatting & ATS',
 };
 
-function ringColor(s: number)   { return s >= 70 ? '#10D98A' : s >= 50 ? '#F59E0B' : '#F06060'; }
+function ringColor(s: number)   { return s >= 70 ? '#10D98A' : s >= 50 ? '#4080FF' : '#F06060'; }
 function scoreColor(v: number)  {
   if (v >= 7.5) return { text: 'text-success', bar: '#10D98A' };
-  if (v >= 5)   return { text: 'text-warning', bar: '#F59E0B' };
+  if (v >= 5)   return { text: 'text-accent',  bar: '#4080FF' };
   return               { text: 'text-danger',  bar: '#F06060' };
 }
 function matchColor(p: number)  { return p >= 75 ? 'text-success' : p >= 50 ? 'text-warning' : 'text-danger'; }
 function matchBg(p: number)     { return p >= 75 ? 'bg-success-bg border-success-border' : p >= 50 ? 'bg-warning-bg border-warning-border' : 'bg-danger-bg border-danger-border'; }
 
 function scoreLabel(s: number): { label: string; color: string; bg: string } {
-  if (s >= 78) return { label: 'Strong',       color: 'text-success', bg: 'bg-success-bg border-success-border' };
-  if (s >= 62) return { label: 'Average',      color: 'text-warning', bg: 'bg-warning-bg border-warning-border' };
-  if (s >= 45) return { label: 'Below Average',color: 'text-warning', bg: 'bg-warning-bg border-warning-border' };
-  return              { label: 'Poor',         color: 'text-danger',  bg: 'bg-danger-bg border-danger-border' };
+  if (s >= 78) return { label: 'Strong',        color: 'text-success', bg: 'bg-success-bg border-success-border' };
+  if (s >= 62) return { label: 'Average',       color: 'text-accent',  bg: 'bg-accent-glow border-accent-border' };
+  if (s >= 45) return { label: 'Below Average', color: 'text-warning', bg: 'bg-warning-bg border-warning-border' };
+  return              { label: 'Poor',          color: 'text-danger',  bg: 'bg-danger-bg border-danger-border' };
 }
 
 function impactMessage(verdict: string, jdMatch?: number): { text: string; color: string; bg: string } {
@@ -194,7 +194,7 @@ export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsPr
             {/* Ring */}
             <div className="relative flex-shrink-0">
               <svg width="124" height="124" viewBox="0 0 124 124" className="-rotate-90">
-                <circle cx="62" cy="62" r="54" fill="none" stroke="#1C2E4A" strokeWidth="9" />
+                <circle cx="62" cy="62" r="54" fill="none" stroke="#1E3050" strokeWidth="9" />
                 <circle cx="62" cy="62" r="54" fill="none" stroke={ringColor(overall)} strokeWidth="9"
                   strokeLinecap="round" strokeDasharray={circumference}
                   className="score-ring-progress"
@@ -260,26 +260,35 @@ export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsPr
 
         {/* ── Projected Score ── */}
         {projected_score !== undefined && (
-          <div className="rounded-xl border border-accent-border bg-accent-glow px-4 py-3.5 flex items-center justify-between result-card" style={{ animationDelay: '50ms' }}>
-            <div className="flex items-center gap-2.5">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2 12L6 8l3 3 5-7" stroke="#4080FF" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+          <div
+            className="rounded-2xl border border-accent-border px-5 py-4 flex items-center justify-between result-card"
+            style={{
+              animationDelay: '50ms',
+              background: 'linear-gradient(135deg, rgba(64,128,255,0.12) 0%, rgba(56,189,248,0.06) 100%)',
+              boxShadow: '0 2px 20px rgba(0,0,0,0.5), 0 0 40px rgba(64,128,255,0.1), inset 0 1px 0 rgba(255,255,255,0.06)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 4px 12px rgba(64,128,255,0.4)' }}>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                  <path d="M2 11L5.5 7.5l2.5 2.5L13 3" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
               <div>
-                <p className="text-sm font-display font-semibold text-primary">Apply all fixes</p>
-                <p className="text-xs text-secondary">Your score could improve to</p>
+                <p className="text-sm font-display font-bold text-primary">Apply all fixes</p>
+                <p className="text-xs text-secondary mt-0.5">Estimated score after improvements</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="font-display font-bold text-2xl text-accent">{projected_score}<span className="text-sm font-normal text-secondary">/100</span></p>
-              <p className="text-xs text-success font-semibold">+{projected_score - overall} points</p>
+            <div className="text-right flex-shrink-0 ml-4">
+              <p className="font-display font-bold text-3xl text-accent leading-none">{projected_score}<span className="text-sm font-normal text-secondary">/100</span></p>
+              <p className="text-xs text-success font-semibold mt-0.5">+{projected_score - overall} points</p>
             </div>
           </div>
         )}
 
         {/* ── Keywords ── */}
         {(critKW.length > 0 || optKW.length > 0) && (
-          <div className="card result-card border-l-4 border-l-danger" style={{ animationDelay: '100ms' }}>
+          <div className="card result-card" style={{ animationDelay: '100ms' }}>
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-7 h-7 rounded-lg bg-danger-bg border border-danger-border flex items-center justify-center flex-shrink-0">
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -588,15 +597,15 @@ export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsPr
 
       {/* ── Sticky CTA ── */}
       <div className={`fixed bottom-0 left-0 right-0 z-40 transition-transform duration-300 ${showSticky ? 'translate-y-0' : 'translate-y-full'}`}>
-        <div className="bg-elevated border-t border-border px-4 py-3 flex items-center justify-between gap-3 max-w-3xl mx-auto">
+        <div
+          className="px-4 py-3 flex items-center justify-between gap-3 max-w-3xl mx-auto"
+          style={{ background: 'rgba(10, 18, 38, 0.95)', borderTop: '1px solid rgba(64,128,255,0.2)', backdropFilter: 'blur(16px)' }}
+        >
           <div className="min-w-0">
             <p className="text-xs text-secondary truncate">Score: <span className="font-semibold text-primary">{overall}/100</span> · ATS: <span className="font-semibold">{ats_verdict}</span></p>
-            {projected_score && <p className="text-xs text-accent font-semibold">Fix issues → reach {projected_score}/100</p>}
+            {projected_score && <p className="text-xs text-accent font-semibold">Apply fixes → reach {projected_score}/100</p>}
           </div>
-          <button
-            onClick={onReset}
-            className="flex-shrink-0 btn-primary text-sm py-2 px-4"
-          >
+          <button onClick={onReset} className="flex-shrink-0 btn-primary text-sm py-2.5 px-5">
             {isDemo ? 'Score my resume →' : 'Score again →'}
           </button>
         </div>

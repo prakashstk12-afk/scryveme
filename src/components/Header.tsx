@@ -3,7 +3,7 @@ import AuthButton from './AuthButton';
 
 export default function Header() {
   return (
-    <header className="border-b border-border bg-base/90 backdrop-blur-md sticky top-0 z-50">
+    <header className="border-b border-border bg-base/95 backdrop-blur-xl sticky top-0 z-50" style={{ boxShadow: '0 1px 0 rgba(64,128,255,0.08), 0 4px 24px rgba(0,0,0,0.4)' }}>
       <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
