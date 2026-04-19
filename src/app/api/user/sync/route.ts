@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
     );
 
     if (error) {
-      console.error('[UserSync] Supabase upsert error:', error.message);
-      return NextResponse.json({ error: 'DB error', detail: error.message, code: error.code }, { status: 500 });
+      console.error('[UserSync] Supabase upsert error:', error.code, error.message);
+      return NextResponse.json({ error: 'DB error' }, { status: 500 });
     }
   }
 
