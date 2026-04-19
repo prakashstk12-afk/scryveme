@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
   const { type, data } = event;
 
-  if (type === 'user.created' || type === 'user.updated') {
+  if (type === 'user.created') {
     const primaryEmail = data.email_addresses.find(
       (e) => e.id === data.primary_email_address_id
     )?.email_address;
@@ -59,15 +59,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No primary email' }, { status: 400 });
     }
 
-    const tier = (data.public_metadata?.tier as string) || 'free';
-
+    // ignoreDuplicates: true — safe if webhook fires twice; never overwrites an existing row
     const { error } = await db.from('users').upsert(
-      { id: data.id, email: primaryEmail, tier },
-      { onConflict: 'id' }
+      { id: data.id, email: primaryEmail, tier: 'free', credits: 0, premium_credits: 0 },
+      { onConflict: 'id', ignoreDuplicates: true }
     );
 
     if (error) {
       console.error('[UserSync] Supabase upsert error:', error.message);
+      return NextResponse.json({ error: 'DB error' }, { status: 500 });
+    }
+  }
+
+  if (type === 'user.updated') {
+    const primaryEmail = data.email_addresses.find(
+      (e) => e.id === data.primary_email_address_id
+    )?.email_address;
+
+    if (!primaryEmail) {
+      return NextResponse.json({ error: 'No primary email' }, { status: 400 });
+    }
+
+    // Only update email — tier and credits are managed by the payment flow in Supabase,
+    // not Clerk metadata. Updating tier here would reset paid users back to 'free'.
+    const { error } = await db.from('users').update({ email: primaryEmail }).eq('id', data.id);
+
+    if (error) {
+      console.error('[UserSync] Supabase update error:', error.message);
       return NextResponse.json({ error: 'DB error' }, { status: 500 });
     }
   }
