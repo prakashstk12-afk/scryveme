@@ -83,8 +83,13 @@ export async function POST(request: NextRequest) {
     const { userId, sessionClaims } = await auth();
     const userEmail = (sessionClaims?.email as string) ?? null;
 
-    let tier: UserTier = 'free';
-    if (userId) {
+    // Admin bypass — emails listed in ADMIN_EMAILS get unlimited access
+    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+      .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    const isAdmin = !!userEmail && adminEmails.includes(userEmail.toLowerCase());
+
+    let tier: UserTier = isAdmin ? 'elite' : 'free';
+    if (!isAdmin && userId) {
       const metaTier = (sessionClaims?.metadata as { tier?: string } | null)?.tier;
       if (metaTier === 'pro' || metaTier === 'elite') {
         tier = metaTier;
