@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import PayWithRazorpay from './PayWithRazorpay';
 
 interface UpgradePromptProps {
@@ -32,13 +31,10 @@ export default function UpgradePrompt({ resetMs, onDismiss, onPaymentSuccess, au
   }
 
   return (
-    // Backdrop
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-base/80 backdrop-blur-sm" onClick={onDismiss} />
 
-      {/* Sheet — slides up on mobile, centered modal on desktop */}
       <div className="relative w-full max-w-md animate-fade-up">
-        {/* Gradient top border */}
         <div className="h-px w-full bg-gradient-to-r from-transparent via-accent to-transparent rounded-t-2xl" />
 
         <div className="bg-elevated border border-border-bright rounded-2xl overflow-hidden" style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(64,128,255,0.12)' }}>
@@ -68,18 +64,18 @@ export default function UpgradePrompt({ resetMs, onDismiss, onPaymentSuccess, au
           {/* Body */}
           <div className="px-6 pb-6 space-y-3">
             <p className="text-secondary text-sm leading-relaxed">
-              You&apos;ve used your 2 free scores for today. Choose how to continue:
+              You&apos;ve used your 2 free scores for today. Score now for ₹19 or wait until reset.
             </p>
 
-            {/* ── Option 1: Pay ₹15 ── */}
+            {/* ── Pay ₹19 ── */}
             <div className="rounded-xl border border-accent-border bg-accent-glow p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-primary text-sm font-display font-semibold">Score this resume now</p>
-                  <p className="text-secondary text-xs mt-0.5">Credit added instantly · Never expires</p>
+                  <p className="text-secondary text-xs mt-0.5">Full analysis · Credit never expires</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-3">
-                  <p className="text-accent font-display font-bold text-xl">₹15</p>
+                  <p className="text-accent font-display font-bold text-xl">₹19</p>
                   <p className="text-dim text-xs">one-time</p>
                 </div>
               </div>
@@ -92,9 +88,10 @@ export default function UpgradePrompt({ resetMs, onDismiss, onPaymentSuccess, au
               )}
 
               <PayWithRazorpay
+                type="pay_per_use"
                 onSuccess={handleSuccess}
                 onError={(msg) => setPayError(msg)}
-                label="Pay ₹15 · Score now"
+                label="Pay ₹19 · Score now"
                 autoTrigger={autoTriggerPayment}
                 className="w-full py-2.5 rounded-xl bg-accent text-white hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
                 style={{ boxShadow: '0 4px 20px rgba(64,128,255,0.3)' } as React.CSSProperties}
@@ -104,29 +101,6 @@ export default function UpgradePrompt({ resetMs, onDismiss, onPaymentSuccess, au
                 Secured by Razorpay · UPI / Cards / Netbanking
               </p>
             </div>
-
-            {/* ── Option 2: Subscribe ── */}
-            <Link
-              href="/pricing"
-              onClick={onDismiss}
-              className="flex items-center justify-between rounded-xl border border-border bg-surface p-4 hover:border-border-bright hover:bg-elevated transition-all group"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-primary text-sm font-display font-semibold">Unlimited with Pro or Elite</p>
-                  <span className="text-xs bg-accent text-white px-2 py-0.5 rounded-full font-display font-bold">Popular</span>
-                </div>
-                <p className="text-secondary text-xs mt-0.5">
-                  AI improvements · Save resumes · Cancel anytime
-                </p>
-              </div>
-              <div className="text-right flex-shrink-0 ml-3">
-                <p className="text-primary font-display font-bold text-lg">
-                  ₹99<span className="text-xs font-normal text-secondary">/mo</span>
-                </p>
-                <p className="text-dim text-xs group-hover:text-accent transition-colors">See plans →</p>
-              </div>
-            </Link>
 
             {/* Dismiss */}
             <button

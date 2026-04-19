@@ -17,11 +17,8 @@ export function getRazorpay(): Razorpay {
 
 // Amount in paise for each product
 export const PRICES = {
-  pay_per_use:     1500,   // ₹15
-  pro_monthly:     9900,   // ₹99
-  pro_annual:      79900,  // ₹799
-  elite_monthly:   19900,  // ₹199
-  elite_annual:    149900, // ₹1,499
+  pay_per_use: 1900,  // ₹19
+  premium:     9900,  // ₹99
 } as const;
 
 export type PriceKey = keyof typeof PRICES;

@@ -1,34 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { ScoreRequestSchema } from '@/lib/schemas';
 import { scoreResume } from '@/lib/scorer';
-import { checkRateLimit, UserTier } from '@/lib/ratelimit';
+import { checkRateLimit, checkBurstLimit, UserTier } from '@/lib/ratelimit';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { sanitizeText, containsPromptInjection, isAdminEmail } from '@/lib/text';
+import { deductCredit } from '@/lib/credits';
 
-function sanitizeText(text: string): string {
-  return text
-    .replace(/\0/g, '')
-    .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\n{4,}/g, '\n\n\n')
-    .trim();
-}
-
-function containsPromptInjection(text: string): boolean {
-  const patterns = [
-    /ignore\s+(all\s+)?previous\s+instructions/i,
-    /you\s+are\s+now\s+(a\s+)?/i,
-    /system\s*:\s*you/i,
-    /\[INST\]/i,
-    /<\|im_start\|>/i,
-    /###\s*instruction/i,
-    /forget\s+your\s+(previous\s+)?training/i,
-    /act\s+as\s+if\s+you\s+are/i,
-    /pretend\s+you\s+are\s+an?\s+AI/i,
-  ];
-  return patterns.some((p) => p.test(text));
-}
 
 async function resolveUserTier(userId: string, email: string | null): Promise<UserTier> {
   const db = getSupabaseAdmin();
@@ -41,35 +19,13 @@ async function resolveUserTier(userId: string, email: string | null): Promise<Us
     .maybeSingle();
 
   if (!data && email) {
-    await db.from('users').insert({ id: userId, email, tier: 'free', credits: 0 });
+    await db.from('users').insert({ id: userId, email, tier: 'free', credits: 0, premium_credits: 0 });
     return 'free';
   }
 
   return (data?.tier as UserTier) ?? 'free';
 }
 
-// Atomically deduct 1 credit — returns true if credit was available and deducted
-async function tryDeductCredit(userId: string): Promise<{ ok: boolean; remaining: number }> {
-  const db = getSupabaseAdmin();
-  if (!db) return { ok: false, remaining: 0 };
-
-  const { data } = await db
-    .from('users')
-    .select('credits')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (!data || data.credits <= 0) return { ok: false, remaining: 0 };
-
-  // Update — acceptable race window for this scale; use DB function in Phase 5 if needed
-  const { error } = await db
-    .from('users')
-    .update({ credits: data.credits - 1 })
-    .eq('id', userId);
-
-  if (error) return { ok: false, remaining: data.credits };
-  return { ok: true, remaining: data.credits - 1 };
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -79,14 +35,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Content-Type must be application/json' }, { status: 415 });
     }
 
-    // 2. Resolve auth (anonymous users allowed for free tier)
-    const { userId, sessionClaims } = await auth();
-    const userEmail = (sessionClaims?.email as string) ?? null;
+    // 2. Parse body first (needed for testAs param)
+    let body: unknown;
+    try {
+      const text = await request.text();
+      if (text.length > 50_000) {
+        return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
+      }
+      body = JSON.parse(text);
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
 
-    // Admin bypass — emails listed in ADMIN_EMAILS get unlimited access
-    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-      .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-    const isAdmin = !!userEmail && adminEmails.includes(userEmail.toLowerCase());
+    // 3. Resolve auth (anonymous users allowed for free tier)
+    const { userId, sessionClaims } = await auth();
+
+    // currentUser() is cached per-request by Clerk — reliable email source
+    const clerkUser = userId ? await currentUser() : null;
+    const userEmail = clerkUser?.emailAddresses[0]?.emailAddress
+      ?? (sessionClaims?.email as string | undefined)
+      ?? null;
+
+    const isAdmin = isAdminEmail(userEmail);
+
+    // Admin testAs — lets admin simulate any tier for UI testing
+    const testAs = isAdmin
+      ? (body as Record<string, unknown>)?.testAs as string | undefined
+      : undefined;
 
     let tier: UserTier = isAdmin ? 'elite' : 'free';
     if (!isAdmin && userId) {
@@ -98,53 +73,70 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Dual-fingerprint rate limiting
+    // 4. Dual-fingerprint rate limiting (free tier daily cap)
     const ip          = request.headers.get('x-real-client-ip') || '127.0.0.1';
     const fingerprint = request.headers.get('x-fingerprint') || null;
 
-    const { allowed, remaining, reset } = await checkRateLimit({ ip, fingerprint, tier, userId });
+    // Admin with testAs='ratelimited' gets the upgrade prompt for testing
+    if (isAdmin && testAs === 'ratelimited') {
+      const fakeReset = Date.now() + 3_600_000;
+      return NextResponse.json(
+        {
+          error: "You've used your 2 free scores for today. Purchase a credit for ₹19 or wait until tomorrow.",
+          code:  'RATE_LIMITED',
+          reset: fakeReset,
+        },
+        { status: 429, headers: { 'Retry-After': '3600', 'X-RateLimit-Remaining': '0' } },
+      );
+    }
 
-    // 4. If rate-limited on free tier, check pay-per-use credits before blocking
-    let usedCredit  = false;
+    const effectiveTier: UserTier = (isAdmin && testAs === 'free') ? 'free' : tier;
+    const { allowed, remaining, reset } = await checkRateLimit({
+      ip, fingerprint, tier: effectiveTier, userId,
+    });
+
+    // 5. If rate-limited on free tier, try deducting a pay-per-use credit
+    let usedCredit    = false;
     let creditBalance = 0;
 
     if (!allowed) {
       if (userId) {
-        const deduct = await tryDeductCredit(userId);
-        if (deduct.ok) {
+        if (!await checkBurstLimit(userId)) {
+          return NextResponse.json(
+            { error: 'Too many requests. Please slow down.', code: 'BURST_LIMITED' },
+            { status: 429, headers: { 'Retry-After': '60' } },
+          );
+        }
+
+        // Admin with testAs='paid' simulates having a pay-per-use credit (no actual deduction)
+        if (isAdmin && testAs === 'paid') {
           usedCredit    = true;
-          creditBalance = deduct.remaining;
+          creditBalance = 0;
+        } else {
+          const deduct = await deductCredit(userId, 'deduct_credit');
+          if (deduct.ok) {
+            usedCredit    = true;
+            creditBalance = deduct.remaining;
+          }
         }
       }
 
       if (!usedCredit) {
         return NextResponse.json(
           {
-            error: "You've used your 2 free scores for today. Purchase a credit or upgrade to continue.",
-            code: 'RATE_LIMITED',
+            error: "You've used your 2 free scores for today. Purchase a credit for ₹19 or wait until tomorrow.",
+            code:  'RATE_LIMITED',
             reset,
           },
           {
             status: 429,
             headers: {
-              'Retry-After':          String(Math.ceil((reset - Date.now()) / 1000)),
+              'Retry-After':           String(Math.ceil((reset - Date.now()) / 1000)),
               'X-RateLimit-Remaining': '0',
             },
           }
         );
       }
-    }
-
-    // 5. Parse + size guard
-    let body: unknown;
-    try {
-      const text = await request.text();
-      if (text.length > 50_000) {
-        return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
-      }
-      body = JSON.parse(text);
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
     // 6. Zod validation
@@ -168,10 +160,26 @@ export async function POST(request: NextRequest) {
     // 8. Score
     const result = await scoreResume({ resumeText: cleanResume, jobRole, jobDescription: cleanJD });
 
+    const responseTier: UserTier = (isAdmin && testAs === 'paid') ? 'free'
+      : (isAdmin && testAs === 'free')  ? 'free'
+      : tier;
+
+    // Strip paid-only fields for free-tier responses (no credit used, not pro/elite)
+    const isPaidResponse = responseTier === 'pro' || responseTier === 'elite' || usedCredit;
+    const strippedResult = isPaidResponse ? result : {
+      ...result,
+      improved_bullets:     undefined,
+      bullet_explanations:  undefined,
+      critical_keywords:    undefined,
+      optional_keywords:    undefined,
+      projected_score:      undefined,
+    };
+
     return NextResponse.json(
       {
-        ...result,
-        tier,
+        ...strippedResult,
+        tier: responseTier,
+        ...(isAdmin && { isAdmin: true }),
         ...(usedCredit && { creditUsed: true, creditsRemaining: creditBalance }),
       },
       {

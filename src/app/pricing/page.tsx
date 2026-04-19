@@ -9,157 +9,101 @@ import Footer from '@/components/Footer';
 
 const PLANS = [
   {
-    id: 'pay_per_use',
-    tag: 'FLEXIBLE',
-    name: 'Pay as you go',
-    monthlyPaise: null,
-    annualPaise: null,
-    perUse: 15,
-    tagline: 'Pay only when you need it. Credits never expire.',
-    highlight: false,
-    cta: 'Score now →',
-    ctaHref: '/',
-    ctaStyle: 'secondary' as const,
-    features: [
-      { label: '1 scored resume per payment', included: true },
-      { label: 'Full 7-section score + ATS verdict', included: true },
-      { label: 'India-specific tips', included: true },
-      { label: 'JD match % (with job description)', included: true },
-      { label: 'Basic section improvement tips', included: true },
-      { label: 'Credits never expire', included: true },
-      { label: 'Save scored resume to account', included: false },
-      { label: 'AI-recommended content per section', included: false },
-      { label: 'Full AI section rewrites', included: false },
-      { label: 'Resume history & comparison', included: false },
-    ],
-  },
-  {
     id: 'free',
     tag: 'STARTER',
     name: 'Free',
-    monthlyPaise: 0,
-    annualPaise: 0,
-    perUse: null,
-    tagline: '2 resumes per day. No sign-up required.',
+    price: '₹0',
+    priceLabel: 'forever free',
+    tagline: 'Try before you commit. No sign-up needed.',
     highlight: false,
-    cta: 'Get started free',
+    cta: 'Start free',
     ctaHref: '/',
     ctaStyle: 'secondary' as const,
     features: [
-      { label: '2 free scores per day', included: true },
-      { label: 'Full 7-section score + ATS verdict', included: true },
-      { label: 'India-specific tips', included: true },
-      { label: 'JD match % (with job description)', included: true },
-      { label: 'Basic section improvement tips', included: false },
-      { label: 'Credits never expire', included: false },
-      { label: 'Save scored resume to account', included: false },
-      { label: 'AI-recommended content per section', included: false },
-      { label: 'Full AI section rewrites', included: false },
-      { label: 'Resume history & comparison', included: false },
+      'See your ATS score instantly',
+      'Understand why your resume gets rejected',
+      'JD match score with your job description',
+      'Section-by-section breakdown',
+      '2 resumes per day',
     ],
   },
   {
-    id: 'pro',
+    id: 'pay_per_use',
     tag: 'MOST POPULAR',
-    name: 'Pro',
-    monthlyPaise: 9900,
-    annualPaise: 79900,
-    perUse: null,
-    tagline: 'Unlimited scoring with detailed AI improvements.',
+    name: 'Pay per use',
+    price: '₹19',
+    priceLabel: 'per resume',
+    tagline: 'Full analysis, one-time payment. No subscription ever.',
     highlight: true,
-    cta: 'Start Pro',
-    ctaHref: '#',
+    cta: 'Score my resume',
+    ctaHref: '/',
     ctaStyle: 'primary' as const,
-    annualSaving: '₹389',
     features: [
-      { label: 'Unlimited daily scores', included: true },
-      { label: 'Full 7-section score + ATS verdict', included: true },
-      { label: 'India-specific tips', included: true },
-      { label: 'JD match % (with job description)', included: true },
-      { label: 'Detailed section improvement tips', included: true },
-      { label: 'AI-recommended content per section', included: true },
-      { label: 'Save up to 10 resumes', included: true },
-      { label: 'Resume history & version tracking', included: true },
-      { label: 'Full AI section rewrites', included: false },
-      { label: 'Resume A/B comparison', included: false },
+      'See exactly why your resume gets rejected',
+      'Improve your chances of getting shortlisted',
+      'Detailed improvement tips for every section',
+      'JD match score with keyword gaps',
+      'India-specific ATS insights',
+      'Credits never expire — use anytime',
     ],
   },
   {
-    id: 'elite',
-    tag: 'COMPLETE',
-    name: 'Elite',
-    monthlyPaise: 19900,
-    annualPaise: 149900,
-    perUse: null,
-    tagline: 'Full AI rewrites and unlimited everything.',
+    id: 'premium',
+    tag: 'JOB-READY',
+    name: 'Premium',
+    price: '₹99',
+    priceLabel: 'per resume',
+    tagline: 'Walk away with a resume that gets you interviews.',
     highlight: false,
-    cta: 'Start Elite',
-    ctaHref: '#',
+    cta: 'Get job-ready resume',
+    ctaHref: '/',
     ctaStyle: 'gradient' as const,
-    annualSaving: '₹889',
     features: [
-      { label: 'Unlimited daily scores', included: true },
-      { label: 'Full 7-section score + ATS verdict', included: true },
-      { label: 'India-specific tips', included: true },
-      { label: 'JD match % (with job description)', included: true },
-      { label: 'Detailed section improvement tips', included: true },
-      { label: 'AI-recommended content per section', included: true },
-      { label: 'Unlimited saved resumes', included: true },
-      { label: 'Resume history & version tracking', included: true },
-      { label: 'Full AI section rewrites (3 alternatives)', included: true },
-      { label: 'Resume A/B comparison', included: true },
+      'Everything in Pay per use, plus:',
+      'Get stronger bullet points that pass ATS filters',
+      'AI-rewritten sections with better impact language',
+      'Stand out from 100+ applicants for the same role',
+      'Downloadable optimized resume (PDF)',
     ],
   },
 ];
 
 const COMPARISON_FEATURES = [
-  { label: 'Scores per day',             payPerUse: '1 per ₹15',  free: '2',          pro: 'Unlimited',  elite: 'Unlimited' },
-  { label: '7-section score',            payPerUse: true,          free: true,         pro: true,         elite: true },
-  { label: 'ATS verdict',                payPerUse: true,          free: true,         pro: true,         elite: true },
-  { label: 'India-specific tips',        payPerUse: true,          free: true,         pro: true,         elite: true },
-  { label: 'JD match %',                 payPerUse: true,          free: true,         pro: true,         elite: true },
-  { label: 'Section improvement tips',   payPerUse: 'Basic',       free: false,        pro: 'Detailed',   elite: 'Detailed' },
-  { label: 'AI-recommended content',     payPerUse: false,         free: false,        pro: true,         elite: true },
-  { label: 'Full AI section rewrites',   payPerUse: false,         free: false,        pro: false,        elite: '3 alternatives' },
-  { label: 'Save scored resumes',        payPerUse: false,         free: false,        pro: 'Up to 10',   elite: 'Unlimited' },
-  { label: 'Resume version history',     payPerUse: false,         free: false,        pro: true,         elite: true },
-  { label: 'Resume A/B comparison',      payPerUse: false,         free: false,        pro: false,        elite: true },
-  { label: 'Credits never expire',       payPerUse: true,          free: false,        pro: false,        elite: false },
-  { label: 'Cancel anytime',             payPerUse: false,         free: false,        pro: true,         elite: true },
+  { label: 'Scores per day',              free: '2 / day',     payPerUse: '1 per ₹19',  premium: '1 per ₹99' },
+  { label: 'Full ATS score',              free: true,          payPerUse: true,          premium: true },
+  { label: 'JD match %',                  free: true,          payPerUse: true,          premium: true },
+  { label: 'Section improvement tips',    free: true,          payPerUse: true,          premium: true },
+  { label: 'India-specific ATS insights', free: true,          payPerUse: true,          premium: true },
+  { label: 'AI-improved bullet points',   free: false,         payPerUse: false,         premium: true },
+  { label: 'Full AI section rewrites',    free: false,         payPerUse: false,         premium: true },
+  { label: 'Downloadable resume (PDF)',   free: false,         payPerUse: false,         premium: true },
+  { label: 'Credits never expire',        free: false,         payPerUse: true,          premium: true },
 ];
 
 const FAQS = [
   {
     q: 'When do my free daily scores reset?',
-    a: 'Free scores reset every day at midnight UTC (5:30 AM IST). You get 2 fresh scores each day, no sign-up needed.',
+    a: 'Free scores reset every day at midnight UTC (5:30 AM IST). You get 2 fresh scores each day — no sign-up needed.',
   },
   {
-    q: 'Do pay-per-use credits expire?',
-    a: 'Never. Once you purchase credits, they stay in your account forever. Buy 1 credit today, use it 6 months later — no problem.',
+    q: 'Do Pay per use credits expire?',
+    a: 'Never. Credits stay in your account forever. Buy today, use it 6 months later — no problem.',
+  },
+  {
+    q: 'What is the difference between Pay per use and Premium?',
+    a: 'Pay per use gives you a full score and detailed improvement suggestions. Premium goes further — it rewrites your resume with stronger bullet points, better language, and gives you a downloadable optimized resume ready to send.',
   },
   {
     q: 'What payment methods are accepted?',
     a: 'All major UPI apps (GPay, PhonePe, Paytm), credit & debit cards, netbanking, and digital wallets — powered by Razorpay.',
   },
   {
-    q: 'Can I cancel my subscription anytime?',
-    a: 'Yes, cancel anytime from your dashboard with one click. You keep access until the end of your billing period. No questions asked.',
-  },
-  {
     q: 'Is my resume data stored on your servers?',
-    a: 'For anonymous free users, your resume text is processed in real-time and immediately discarded — nothing is stored. For signed-in Pro/Elite users, saved resumes are stored securely and encrypted.',
-  },
-  {
-    q: 'What is the difference between Pro and Elite?',
-    a: 'Pro gives you AI-recommended content suggestions for each section. Elite goes further — it generates full AI rewrites with 3 alternative versions per section, plus A/B resume comparison to see which version scores higher.',
-  },
-  {
-    q: 'Can I switch between plans?',
-    a: 'Yes. Upgrade anytime and you get the new tier immediately. Downgrade takes effect at your next billing cycle.',
+    a: 'For anonymous free users, your resume text is processed in real-time and immediately discarded — nothing is stored. Signed-in users\' saved resumes are stored securely and encrypted.',
   },
   {
     q: 'Is there a refund policy?',
-    a: 'Yes. Contact us within 7 days of your subscription payment and we\'ll process a full refund, no questions asked. Pay-per-use credits are non-refundable once used.',
+    a: 'Yes. Contact us within 7 days of your payment and we\'ll process a full refund, no questions asked. Credits are non-refundable once used.',
   },
 ];
 
@@ -171,29 +115,9 @@ function CellValue({ value }: { value: boolean | string }) {
   return <span className="text-secondary text-xs font-medium">{value}</span>;
 }
 
-function formatPrice(paise: number | null, annual: boolean): string {
-  if (paise === null) return '';
-  if (paise === 0) return '₹0';
-  const rs = annual ? Math.round(paise / 12 / 100) : paise / 100;
-  return `₹${rs}`;
-}
-
-function PricingCard({ plan, annual }: { plan: typeof PLANS[0]; annual: boolean }) {
-  const isGradient = plan.ctaStyle === 'gradient';
-  const isPrimary  = plan.ctaStyle === 'primary';
-  const isPayPerUse = plan.id === 'pay_per_use';
-
-  const displayPrice = isPayPerUse
-    ? `₹${plan.perUse}`
-    : formatPrice(annual ? plan.annualPaise : plan.monthlyPaise, annual);
-
-  const billingLabel = isPayPerUse
-    ? 'per score'
-    : plan.monthlyPaise === 0
-      ? 'forever free'
-      : annual
-        ? '/mo billed annually'
-        : '/month';
+function PricingCard({ plan }: { plan: typeof PLANS[0] }) {
+  const isGradient  = plan.ctaStyle === 'gradient';
+  const isPrimary   = plan.ctaStyle === 'primary';
 
   return (
     <div
@@ -219,26 +143,17 @@ function PricingCard({ plan, annual }: { plan: typeof PLANS[0]; annual: boolean 
       </span>
 
       {/* Name */}
-      <h3 className={`font-display font-bold text-2xl mb-1 ${plan.highlight ? 'text-primary' : 'text-primary'}`}>
+      <h3 className="font-display font-bold text-2xl mb-1 text-primary">
         {plan.name}
       </h3>
 
       {/* Price */}
-      <div className="mb-1">
+      <div className="mb-4">
         <span className={`font-display font-bold text-4xl ${plan.highlight ? 'text-white' : 'text-primary'}`}>
-          {displayPrice}
+          {plan.price}
         </span>
-        <span className="text-secondary text-sm ml-1.5">{billingLabel}</span>
+        <span className="text-secondary text-sm ml-1.5">{plan.priceLabel}</span>
       </div>
-
-      {/* Annual saving badge */}
-      {annual && plan.annualSaving && (
-        <div className="mb-3">
-          <span className="text-xs bg-success-bg text-success border border-success-border px-2.5 py-1 rounded-full font-display font-semibold">
-            Save {plan.annualSaving} vs monthly
-          </span>
-        </div>
-      )}
 
       <p className="text-secondary text-sm mb-6 leading-relaxed">{plan.tagline}</p>
 
@@ -255,6 +170,8 @@ function PricingCard({ plan, annual }: { plan: typeof PLANS[0]; annual: boolean 
         style={isGradient ? {
           background: 'linear-gradient(135deg, #4080FF 0%, #38BDF8 100%)',
           boxShadow: '0 4px 20px rgba(64,128,255,0.3)',
+        } : isPrimary ? {
+          boxShadow: '0 4px 16px rgba(64,128,255,0.25)',
         } : {}}
       >
         {plan.cta}
@@ -262,14 +179,17 @@ function PricingCard({ plan, annual }: { plan: typeof PLANS[0]; annual: boolean 
 
       {/* Feature list */}
       <ul className="space-y-2.5">
-        {plan.features.map((f) => (
-          <li key={f.label} className={`flex items-start gap-2.5 text-sm ${f.included ? 'text-primary' : 'text-dim'}`}>
-            <span className={`flex-shrink-0 mt-0.5 font-bold ${f.included ? 'text-success' : 'text-dim'}`}>
-              {f.included ? '✓' : '—'}
-            </span>
-            {f.label}
-          </li>
-        ))}
+        {plan.features.map((label) => {
+          const isNote = label.endsWith(':');
+          return (
+            <li key={label} className={`flex items-start gap-2.5 text-sm ${isNote ? 'text-secondary font-medium' : 'text-primary'}`}>
+              {!isNote && (
+                <span className="flex-shrink-0 mt-0.5 font-bold text-success">✓</span>
+              )}
+              {label}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -303,64 +223,44 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ─── Main Page ─────────────────────────────────────────────────
 
 export default function PricingPage() {
-  const [annual, setAnnual] = useState(false);
-
   return (
     <div className="min-h-screen">
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 pb-24">
+      <main className="max-w-5xl mx-auto px-4 pb-24">
 
         {/* ── Hero ── */}
         <section className="pt-16 pb-12 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-accent-glow text-accent text-xs font-display font-semibold px-4 py-1.5 rounded-full mb-6 border border-accent-border">
             <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
-            Simple, honest pricing · No hidden fees
+            Simple pricing · No subscriptions
           </div>
 
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-primary leading-tight mb-4">
-            Plans for every step of your<br />
-            <span className="gradient-text">career journey</span>
+            Pay only when<br />
+            <span className="gradient-text">you need it</span>
           </h1>
-          <p className="text-secondary text-lg leading-relaxed mb-8">
-            Start free, score your resume, and upgrade when you need AI-powered improvements. Cancel anytime.
+          <p className="text-secondary text-lg leading-relaxed">
+            Start free. Score your resume. Upgrade when you want a job-ready version.
           </p>
-
-          {/* Billing toggle */}
-          <div className="inline-flex items-center gap-3 bg-surface border border-border p-1 rounded-xl">
-            <button
-              onClick={() => setAnnual(false)}
-              className={`px-5 py-2 rounded-lg text-sm font-display font-medium transition-all ${
-                !annual ? 'bg-elevated text-primary border border-border-bright' : 'text-secondary hover:text-primary'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={`px-5 py-2 rounded-lg text-sm font-display font-medium transition-all flex items-center gap-2 ${
-                annual ? 'bg-elevated text-primary border border-border-bright' : 'text-secondary hover:text-primary'
-              }`}
-            >
-              Annual
-              <span className="text-xs bg-success-bg text-success border border-success-border px-2 py-0.5 rounded-full font-bold">
-                Save 33%
-              </span>
-            </button>
-          </div>
         </section>
 
         {/* ── Pricing Cards ── */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-20">
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-4">
           {PLANS.map((plan) => (
-            <PricingCard key={plan.id} plan={plan} annual={annual} />
+            <PricingCard key={plan.id} plan={plan} />
           ))}
         </section>
+
+        {/* Trust line */}
+        <p className="text-center text-xs text-dim mb-20">
+          No subscription required · Pay only when you need · Powered by Razorpay
+        </p>
 
         {/* ── Comparison Table ── */}
         <section className="mb-20">
           <h2 className="font-display font-bold text-2xl text-primary text-center mb-8">
-            Full feature comparison
+            What&apos;s included
           </h2>
 
           {/* Mobile: card per feature */}
@@ -368,12 +268,11 @@ export default function PricingPage() {
             {COMPARISON_FEATURES.map((f) => (
               <div key={f.label} className="bg-elevated border border-border rounded-xl p-4">
                 <p className="text-primary text-sm font-display font-medium mb-3">{f.label}</p>
-                <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="grid grid-cols-3 gap-2 text-center">
                   {[
-                    { tier: 'Pay/use', val: f.payPerUse },
-                    { tier: 'Free',    val: f.free },
-                    { tier: 'Pro',     val: f.pro },
-                    { tier: 'Elite',   val: f.elite },
+                    { tier: 'Free',       val: f.free },
+                    { tier: 'Pay/use',    val: f.payPerUse },
+                    { tier: 'Premium',    val: f.premium },
                   ].map(({ tier, val }) => (
                     <div key={tier}>
                       <p className="text-xs text-secondary mb-1">{tier}</p>
@@ -393,9 +292,9 @@ export default function PricingPage() {
                   <th className="text-left px-6 py-4 text-xs font-display font-semibold tracking-widest uppercase text-secondary w-[40%]">
                     Feature
                   </th>
-                  {['Pay as you go', 'Free', 'Pro', 'Elite'].map((h) => (
+                  {['Free', 'Pay per use', 'Premium'].map((h) => (
                     <th key={h} className="px-4 py-4 text-center">
-                      <span className={`text-sm font-display font-bold ${h === 'Pro' ? 'text-accent' : 'text-primary'}`}>
+                      <span className={`text-sm font-display font-bold ${h === 'Pay per use' ? 'text-accent' : 'text-primary'}`}>
                         {h}
                       </span>
                     </th>
@@ -409,10 +308,9 @@ export default function PricingPage() {
                     className={`border-b border-border last:border-0 ${i % 2 === 0 ? 'bg-elevated' : 'bg-surface'}`}
                   >
                     <td className="px-6 py-3.5 text-sm text-primary">{f.label}</td>
-                    <td className="px-4 py-3.5 text-center"><CellValue value={f.payPerUse} /></td>
                     <td className="px-4 py-3.5 text-center"><CellValue value={f.free} /></td>
-                    <td className="px-4 py-3.5 text-center bg-accent-glow"><CellValue value={f.pro} /></td>
-                    <td className="px-4 py-3.5 text-center"><CellValue value={f.elite} /></td>
+                    <td className="px-4 py-3.5 text-center bg-accent-glow"><CellValue value={f.payPerUse} /></td>
+                    <td className="px-4 py-3.5 text-center"><CellValue value={f.premium} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -441,8 +339,8 @@ export default function PricingPage() {
                     <path d="M8 11l2.5 2.5L14 9" stroke="#4080FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 ),
-                title: 'Cancel anytime',
-                sub: 'No lock-in contracts',
+                title: 'No subscription',
+                sub: 'Pay only when you need',
               },
               {
                 icon: (
@@ -451,8 +349,8 @@ export default function PricingPage() {
                     <path d="M11 7v4.5l3 3" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                 ),
-                title: 'No hidden fees',
-                sub: 'Price is price. Always.',
+                title: 'Credits never expire',
+                sub: 'Buy now, use anytime',
               },
               {
                 icon: (
@@ -494,21 +392,21 @@ export default function PricingPage() {
         <section className="text-center max-w-xl mx-auto">
           <div className="bg-elevated border border-border-bright rounded-2xl p-8 sm:p-10" style={{ boxShadow: '0 0 60px rgba(64,128,255,0.06)' }}>
             <h2 className="font-display font-bold text-2xl sm:text-3xl text-primary mb-3">
-              Still deciding?
+              Not sure where to start?
             </h2>
             <p className="text-secondary text-base mb-7 leading-relaxed">
-              Start with the free tier — no sign-up needed. Upgrade only when you&apos;re ready to get the full AI improvement experience.
+              Try it free — no sign-up needed. See your score in under 30 seconds.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/" className="btn-primary px-8 py-3 text-sm text-center">
                 Score my resume free →
               </Link>
-              <Link href="/#" className="btn-secondary px-8 py-3 text-sm text-center">
-                View Pro plan
+              <Link href="#" className="btn-secondary px-8 py-3 text-sm text-center">
+                See full analysis — ₹19
               </Link>
             </div>
             <p className="text-xs text-dim mt-5">
-              No credit card required for free tier · Payments via Razorpay · Cancel Pro/Elite anytime
+              No credit card required · No subscription · Pay only when you need
             </p>
           </div>
         </section>

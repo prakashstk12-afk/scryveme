@@ -49,12 +49,13 @@ function loadRazorpayScript(): Promise<boolean> {
 }
 
 interface PayWithRazorpayProps {
-  onSuccess: () => void;
-  onError:   (msg: string) => void;
-  className?: string;
-  style?: React.CSSProperties;
-  label?: string;
+  onSuccess:    () => void;
+  onError:      (msg: string) => void;
+  className?:   string;
+  style?:       React.CSSProperties;
+  label?:       string;
   autoTrigger?: boolean;
+  type?:        'pay_per_use' | 'premium';
 }
 
 export default function PayWithRazorpay({
@@ -62,8 +63,9 @@ export default function PayWithRazorpay({
   onError,
   className = '',
   style,
-  label = 'Pay ₹15 · Score now',
+  label = 'Pay ₹19 · Score now',
   autoTrigger = false,
+  type = 'pay_per_use',
 }: PayWithRazorpayProps) {
   const { isSignedIn, user } = useUser();
   const router               = useRouter();
@@ -74,14 +76,15 @@ export default function PayWithRazorpay({
 
   const notSignedIn = isSignedIn === false;
 
+  const signInLabel = type === 'premium' ? 'Sign in to pay ₹99' : 'Sign in to pay ₹19';
   const statusLabel: Record<Status, string> = {
-    idle:               notSignedIn ? 'Sign in to pay ₹15' : label,
+    idle:               notSignedIn ? signInLabel : label,
     'loading-script':   'Loading gateway…',
     'creating-order':   'Preparing order…',
     'awaiting-payment': 'Complete payment…',
     verifying:          'Confirming payment…',
     success:            'Payment confirmed ✓',
-    error:              notSignedIn ? 'Sign in to pay ₹15' : label,
+    error:              notSignedIn ? signInLabel : label,
   };
 
   const handleClick = useCallback(async () => {
@@ -103,7 +106,11 @@ export default function PayWithRazorpay({
     setStatus('creating-order');
     let orderId: string, amount: number, currency: string;
     try {
-      const res = await fetch('/api/payments/create-order', { method: 'POST' });
+      const res = await fetch('/api/payments/create-order', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ type }),
+      });
       const data = await res.json();
       if (!res.ok) {
         setStatus('error');
@@ -131,7 +138,7 @@ export default function PayWithRazorpay({
       amount,
       currency,
       name:        'ScyrveMe',
-      description: '1 Resume Score Credit',
+      description: type === 'premium' ? '1 Premium Resume Enhancement' : '1 Resume Score Credit',
       order_id:    orderId,
       prefill: {
         name:  user?.fullName  ?? '',
@@ -151,7 +158,7 @@ export default function PayWithRazorpay({
           const verifyRes = await fetch('/api/payments/verify', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify(response),
+            body:    JSON.stringify({ ...response, type }),
           });
           const verifyData = await verifyRes.json();
 

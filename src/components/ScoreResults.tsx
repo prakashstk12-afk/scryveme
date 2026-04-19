@@ -1,12 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { ScoreResponse } from '@/lib/schemas';
+import type { ScoreResponse, PremiumResponse } from '@/lib/schemas';
+import PayWithRazorpay from './PayWithRazorpay';
 
 interface ScoreResultsProps {
-  result:  ScoreResponse;
-  isDemo?: boolean;
-  onReset: () => void;
+  result:          ScoreResponse;
+  isDemo?:         boolean;
+  isAdmin?:        boolean;
+  tier?:           string;
+  creditUsed?:     boolean;
+  premiumResult?:  PremiumResponse | null;
+  onPremiumReady?: (r: PremiumResponse) => void;
+  resumeText?:     string;
+  jobDescription?: string;
+  onReset:         () => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -114,20 +122,54 @@ function Collapsible({ title, icon, defaultOpen = true, children, delay = '0ms' 
   );
 }
 
+// ── Upgrade gate ─────────────────────────────────────────────────────────────
+
+function UpgradeGate({ title, description, hint }: { title: string; description: string; hint?: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface p-4 flex items-start gap-4">
+      <div className="w-8 h-8 rounded-xl bg-accent-glow border border-accent-border flex items-center justify-center flex-shrink-0 mt-0.5">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="2" y="6.5" width="10" height="6.5" rx="1.5" stroke="#4080FF" strokeWidth="1.3" />
+          <path d="M4.5 6.5V4.5a2.5 2.5 0 015 0v2" stroke="#4080FF" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-display font-semibold text-primary mb-1">{title}</p>
+        <p className="text-xs text-secondary leading-relaxed mb-3">{description}</p>
+        {hint && <p className="text-xs text-dim italic mb-3">{hint}</p>}
+        <a
+          href="/pricing"
+          className="inline-flex items-center gap-1.5 text-xs font-display font-bold text-accent border border-accent-border bg-accent-glow px-3 py-1.5 rounded-lg hover:brightness-110 transition-all"
+        >
+          Get full analysis — ₹19 →
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 const circumference = 2 * Math.PI * 54;
 
-export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsProps) {
+export default function ScoreResults({
+  result, isDemo, isAdmin, tier, creditUsed, premiumResult, onPremiumReady, resumeText, jobDescription, onReset,
+}: ScoreResultsProps) {
   const {
     overall, scores, strengths, improvements, india_specific_tips,
     ats_verdict, jd_match_percent, critical_keywords, optional_keywords,
     missing_keywords, improved_bullets, bullet_explanations, projected_score,
   } = result;
 
+  // Paid access: used a credit, on pro/elite tier, or demo mode
+  const proAccess = tier === 'pro' || tier === 'elite' || creditUsed === true || isDemo === true;
+  const hasPremium = !!premiumResult;
+
   const [copied, setCopied]         = useState<number | null>(null);
   const [copiedAll, setCopiedAll]   = useState(false);
   const [showSticky, setShowSticky] = useState(false);
+  const [premiumError, setPremiumError] = useState('');
+  const [premiumLoading, setPremiumLoading] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
   const offset  = circumference - (overall / 100) * circumference;
@@ -159,6 +201,79 @@ export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsPr
     const a    = document.createElement('a');
     a.href = url; a.download = 'scryveme-resume-report.txt'; a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function fetchPremiumEnhancement() {
+    if (!resumeText) return;
+    setPremiumLoading(true);
+    setPremiumError('');
+    try {
+      const res = await fetch('/api/premium', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ resumeText, jobDescription, scoreData: result }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPremiumError(data.error ?? 'Premium enhancement failed. Try again.');
+        return;
+      }
+      onPremiumReady?.(data);
+    } catch {
+      setPremiumError('Network error. Please try again.');
+    } finally {
+      setPremiumLoading(false);
+    }
+  }
+
+  function downloadPremiumPDF() {
+    if (!premiumResult) return;
+    const lines: string[] = [
+      'SCRYVEME — JOB-READY RESUME ENHANCEMENT',
+      '=========================================',
+      `Original score: ${overall}/100   ATS: ${ats_verdict}`,
+      '',
+      'KEY IMPROVEMENTS MADE',
+      '---------------------',
+      ...premiumResult.key_changes.map((c, i) => `${i + 1}. ${c}`),
+      '',
+    ];
+    if (premiumResult.section_rewrites.summary) {
+      lines.push('IMPROVED SUMMARY', '----------------', premiumResult.section_rewrites.summary, '');
+    }
+    if (premiumResult.section_rewrites.skills) {
+      lines.push('IMPROVED SKILLS', '---------------', premiumResult.section_rewrites.skills, '');
+    }
+    if (premiumResult.all_improved_bullets.length) {
+      lines.push('REWRITTEN BULLET POINTS', '-----------------------');
+      premiumResult.all_improved_bullets.forEach((b, i) => {
+        lines.push(`• ${b}`);
+        if (premiumResult.all_bullet_explanations[i]) lines.push(`  → ${premiumResult.all_bullet_explanations[i]}`);
+        lines.push('');
+      });
+    }
+    if (premiumResult.section_rewrites.experience) {
+      lines.push('EXPERIENCE HIGHLIGHTS', '---------------------', premiumResult.section_rewrites.experience, '');
+    }
+    if (premiumResult.section_rewrites.projects) {
+      lines.push('PROJECTS', '--------', premiumResult.section_rewrites.projects, '');
+    }
+    lines.push('', '— Generated by ScyrveMe Premium (scryveme.in)');
+
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>ScyrveMe Premium Resume</title>
+      <style>
+        body { font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #111; }
+        h1 { font-size: 16px; border-bottom: 2px solid #111; padding-bottom: 6px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+      </style></head>
+      <body><pre>${lines.join('\n').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+      <script>window.onload = function() { window.print(); }</script>
+      </body></html>
+    `);
+    win.document.close();
   }
 
   // Merge keywords: prefer critical/optional split, fallback to missing_keywords
@@ -259,7 +374,7 @@ export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsPr
         </div>
 
         {/* ── Projected Score ── */}
-        {projected_score !== undefined && (
+        {projected_score !== undefined && proAccess && (
           <div
             className="rounded-2xl border border-accent-border px-5 py-4 flex items-center justify-between result-card"
             style={{
@@ -286,6 +401,17 @@ export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsPr
           </div>
         )}
 
+        {/* ── Projected Score gate (free tier) ── */}
+        {!proAccess && (
+          <div className="card result-card" style={{ animationDelay: '50ms' }}>
+            <UpgradeGate
+              title="Projected score after fixes"
+              description="See exactly what score you could reach if you apply all the improvements — so you know which fixes matter most."
+              hint={projected_score ? `Based on your resume, you could reach ${projected_score}/100 with the recommended changes.` : undefined}
+            />
+          </div>
+        )}
+
         {/* ── Keywords ── */}
         {(critKW.length > 0 || optKW.length > 0) && (
           <div className="card result-card" style={{ animationDelay: '100ms' }}>
@@ -301,35 +427,43 @@ export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsPr
               </div>
             </div>
 
-            {critKW.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs font-display font-semibold text-danger uppercase tracking-wider mb-2">
-                  ⚠ Critical — ATS will reject without these
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {critKW.map((kw, i) => (
-                    <span key={i} className="inline-flex items-center gap-1.5 bg-danger-bg border border-danger-border text-danger text-xs font-display font-semibold px-3 py-1.5 rounded-full">
-                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {optKW.length > 0 && (
-              <div>
-                <p className="text-xs font-display font-semibold text-warning uppercase tracking-wider mb-2">
-                  Optional — strengthen your match
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {optKW.map((kw, i) => (
-                    <span key={i} className="inline-flex items-center gap-1.5 bg-warning-bg border border-warning-border text-warning text-xs font-display font-semibold px-3 py-1.5 rounded-full">
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
+            {proAccess ? (
+              <>
+                {critKW.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-display font-semibold text-danger uppercase tracking-wider mb-2">
+                      ⚠ Critical — ATS will reject without these
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {critKW.map((kw, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 bg-danger-bg border border-danger-border text-danger text-xs font-display font-semibold px-3 py-1.5 rounded-full">
+                          <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {optKW.length > 0 && (
+                  <div>
+                    <p className="text-xs font-display font-semibold text-warning uppercase tracking-wider mb-2">
+                      Optional — strengthen your match
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {optKW.map((kw, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 bg-warning-bg border border-warning-border text-warning text-xs font-display font-semibold px-3 py-1.5 rounded-full">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <UpgradeGate
+                title={`${critKW.length} critical + ${optKW.length} optional keywords missing`}
+                description="Your resume is missing keywords that ATS systems actively filter for. Pro shows you exactly which ones — and which are dealbreakers vs nice-to-haves."
+              />
             )}
           </div>
         )}
@@ -390,8 +524,169 @@ export default function ScoreResults({ result, isDemo, onReset }: ScoreResultsPr
           </ul>
         </div>
 
-        {/* ── Rewritten Bullets ── */}
-        {improved_bullets && improved_bullets.length > 0 && (
+        {/* ── Premium CTA (shown after paid analysis, before premium results) ── */}
+        {proAccess && !hasPremium && !isDemo && (
+          <div
+            className="card result-card border border-accent-border"
+            style={{
+              animationDelay: '260ms',
+              background: 'linear-gradient(135deg, rgba(64,128,255,0.08) 0%, rgba(56,189,248,0.04) 100%)',
+            }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 4px 12px rgba(64,128,255,0.35)' }}>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M2 16l3-1.5L15 4.5a2 2 0 00-2.5-2.5L2 13.5 2 16z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-primary text-sm font-display font-bold">Get a job-ready resume</p>
+                  <span className="text-xs bg-accent text-white px-2 py-0.5 rounded-full font-display font-bold">Premium</span>
+                </div>
+                <p className="text-secondary text-xs mb-3 leading-relaxed">
+                  AI rewrites all your bullet points, optimises your summary and skills, and gives you a downloadable resume ready to send.
+                </p>
+                {premiumError && (
+                  <div className="mb-3 text-xs text-danger bg-danger-bg border border-danger-border rounded-lg px-3 py-2">
+                    ⚠ {premiumError}
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  {isAdmin ? (
+                    <button
+                      onClick={fetchPremiumEnhancement}
+                      disabled={premiumLoading}
+                      className="inline-flex items-center justify-center gap-2 text-xs font-display font-bold text-white bg-accent px-4 py-2.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60"
+                      style={{ boxShadow: '0 4px 16px rgba(64,128,255,0.3)' }}
+                    >
+                      {premiumLoading ? 'Enhancing…' : 'Load Premium (Admin)'}
+                    </button>
+                  ) : (
+                    <PayWithRazorpay
+                      type="premium"
+                      label="Pay ₹99 · Get job-ready resume"
+                      onSuccess={fetchPremiumEnhancement}
+                      onError={(msg) => setPremiumError(msg)}
+                      className="inline-flex items-center justify-center gap-2 text-xs font-display font-bold text-white bg-accent px-4 py-2.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60"
+                      style={{ boxShadow: '0 4px 16px rgba(64,128,255,0.3)' } as React.CSSProperties}
+                    />
+                  )}
+                  {premiumLoading && !isAdmin && (
+                    <p className="text-xs text-secondary animate-pulse">Enhancing your resume… (~30s)</p>
+                  )}
+                  {!isAdmin && <p className="text-xs text-dim">One-time · No subscription</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Premium Results ── */}
+        {hasPremium && premiumResult && (
+          <>
+            {/* Key changes summary */}
+            <div className="card result-card border-l-4 border-l-accent" style={{ animationDelay: '260ms' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 4px 12px rgba(64,128,255,0.35)' }}>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M2 11l3-1L10.5 4.5a1.5 1.5 0 00-2-2L3 8l-1 3z" stroke="white" strokeWidth="1.4" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="section-label leading-none">Premium enhancements applied</h2>
+                    <p className="text-xs text-dim mt-0.5">{premiumResult.all_improved_bullets.length} bullets rewritten · sections optimised</p>
+                  </div>
+                </div>
+                <button
+                  onClick={downloadPremiumPDF}
+                  className="flex-shrink-0 flex items-center gap-1.5 text-xs font-display font-bold text-white bg-accent px-3 py-1.5 rounded-lg hover:brightness-110 transition-all"
+                  style={{ boxShadow: '0 2px 8px rgba(64,128,255,0.3)' }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 1.5v6M3.5 5.5l2.5 2.5 2.5-2.5M1.5 9v1A1.5 1.5 0 003 11.5h6A1.5 1.5 0 0010.5 10V9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Download PDF
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {premiumResult.key_changes.map((c, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm p-2.5 rounded-xl bg-accent-glow border border-accent-border">
+                    <span className="text-accent font-bold flex-shrink-0 mt-0.5">✓</span>
+                    <span className="text-primary">{c}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Section rewrites */}
+            {(premiumResult.section_rewrites.summary || premiumResult.section_rewrites.skills) && (
+              <div className="card result-card" style={{ animationDelay: '300ms' }}>
+                <h2 className="section-label mb-4">Rewritten sections</h2>
+                <div className="space-y-4">
+                  {premiumResult.section_rewrites.summary && (
+                    <div className="p-4 rounded-xl bg-surface border border-border">
+                      <p className="text-xs font-display font-bold text-accent uppercase tracking-wider mb-2">Summary / Objective</p>
+                      <p className="text-sm text-primary leading-relaxed">{premiumResult.section_rewrites.summary}</p>
+                    </div>
+                  )}
+                  {premiumResult.section_rewrites.skills && (
+                    <div className="p-4 rounded-xl bg-surface border border-border">
+                      <p className="text-xs font-display font-bold text-accent uppercase tracking-wider mb-2">Skills</p>
+                      <p className="text-sm text-primary leading-relaxed">{premiumResult.section_rewrites.skills}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* All improved bullets */}
+            {premiumResult.all_improved_bullets.length > 0 && (
+              <div className="card result-card border-l-4 border-l-accent" style={{ animationDelay: '340ms' }}>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-accent-glow border border-accent-border flex items-center justify-center flex-shrink-0">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M2 11l3-1L10.5 4.5a1.5 1.5 0 00-2-2L3 8l-1 3z" stroke="#4080FF" strokeWidth="1.4" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="section-label leading-none">All rewritten bullet points</h2>
+                    <p className="text-xs text-dim mt-0.5">Copy and replace these in your resume</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {premiumResult.all_improved_bullets.map((bullet, i) => (
+                    <div key={i} className="rounded-xl bg-accent-glow border border-accent-border overflow-hidden">
+                      <div className="relative p-4 pb-3">
+                        <p className="text-sm font-body text-primary pr-16 leading-relaxed">
+                          <span className="text-accent font-bold mr-1.5">•</span>{bullet}
+                        </p>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(bullet); setCopied(i); setTimeout(() => setCopied(null), 2000); }}
+                          className="absolute top-3 right-3 text-xs font-display font-semibold text-accent border border-accent-border bg-surface px-2.5 py-1 rounded-lg hover:bg-elevated transition-all"
+                        >
+                          {copied === i ? '✓ Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      {premiumResult.all_bullet_explanations[i] && (
+                        <div className="px-4 pb-3 pt-0 border-t border-accent-border/40">
+                          <p className="text-xs text-secondary mt-2">
+                            <span className="text-accent font-semibold font-display">Why: </span>
+                            {premiumResult.all_bullet_explanations[i]}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Rewritten Bullets (from base score, shown for paid users without premium) ── */}
+        {proAccess && improved_bullets && improved_bullets.length > 0 && !hasPremium && (
           <div className="card result-card border-l-4 border-l-accent" style={{ animationDelay: '280ms' }}>
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-7 h-7 rounded-lg bg-accent-glow border border-accent-border flex items-center justify-center flex-shrink-0">

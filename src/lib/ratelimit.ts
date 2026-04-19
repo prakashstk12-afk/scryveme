@@ -3,6 +3,7 @@ import { getRateLimitConfig } from './config';
 
 export type UserTier = 'free' | 'pro' | 'elite';
 
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number; // -1 = unlimited
@@ -41,6 +42,22 @@ async function increment(redis: Redis, key: string): Promise<number> {
   const newVal = await redis.incr(key);
   if (newVal === 1) await redis.expire(key, ttlSeconds()); // set TTL on first write
   return newVal;
+}
+
+// Per-minute burst limit for paid requests (credit-using calls).
+// Prevents scripted abuse even when the user has a large credit balance.
+const PAID_BURST_PER_MINUTE = 10;
+
+export async function checkBurstLimit(userId: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return true;
+
+  const minuteKey = `scryveme:burst:${userId}:${new Date().toISOString().slice(0, 16)}`; // YYYY-MM-DDTHH:MM
+  // Pipeline incr + expire into a single HTTP round-trip to Upstash
+  const results = await redis.pipeline().incr(minuteKey).expire(minuteKey, 90).exec();
+  const count = results?.[0] as number ?? 1;
+
+  return count <= PAID_BURST_PER_MINUTE;
 }
 
 export async function checkRateLimit(options: {

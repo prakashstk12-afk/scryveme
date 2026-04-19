@@ -21,12 +21,12 @@ export default function Header() {
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/pricing"
-            className="hidden sm:block text-xs text-secondary hover:text-primary transition-colors font-display font-medium"
+            className="hidden sm:block text-xs text-dim transition-colors font-display font-medium"
           >
             Pricing
           </Link>
           <div className="h-4 w-px bg-border hidden sm:block" />
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-secondary">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-dim">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <rect x="1.5" y="5.5" width="9" height="5.5" rx="1.25" stroke="currentColor" strokeWidth="1" />
               <path d="M3.5 5.5V3.5a2.5 2.5 0 015 0v2" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />

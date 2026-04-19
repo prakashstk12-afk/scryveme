@@ -14,8 +14,9 @@ CREATE TABLE IF NOT EXISTS public.users (
   email                TEXT UNIQUE NOT NULL,
   tier                 TEXT NOT NULL DEFAULT 'free'
                          CHECK (tier IN ('free', 'pro', 'elite')),
-  credits              INTEGER NOT NULL DEFAULT 0,  -- pay-per-use credits (never expire)
-  subscription_id      TEXT,                        -- Razorpay subscription ID (Phase 2)
+  credits              INTEGER NOT NULL DEFAULT 0,  -- pay-per-use credits ₹19 each (never expire)
+  premium_credits      INTEGER NOT NULL DEFAULT 0,  -- premium credits ₹99 each (never expire)
+  subscription_id      TEXT,                        -- Razorpay subscription ID (future)
   subscription_status  TEXT,                        -- active | cancelled | halted | expired
   subscription_end     TIMESTAMPTZ,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -49,10 +50,11 @@ CREATE TABLE IF NOT EXISTS public.payments (
   type                  TEXT NOT NULL
                           CHECK (type IN (
                             'pay_per_use',
+                            'premium',
                             'pro_monthly', 'pro_annual',
                             'elite_monthly', 'elite_annual'
                           )),
-  credits_added         INTEGER NOT NULL DEFAULT 0, -- for pay_per_use
+  credits_added         INTEGER NOT NULL DEFAULT 0, -- for pay_per_use / premium
   status                TEXT NOT NULL DEFAULT 'pending'
                           CHECK (status IN ('pending', 'captured', 'failed', 'refunded')),
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -80,19 +82,16 @@ INSERT INTO public.app_config (key, value) VALUES
   (
     'pricing_paise',
     '{
-      "pay_per_use": 1500,
-      "pro_monthly": 9900,
-      "pro_annual": 79900,
-      "elite_monthly": 19900,
-      "elite_annual": 149900
+      "pay_per_use": 1900,
+      "premium": 9900
     }'
   ),
   (
     'features',
     '{
       "pay_per_use_active": true,
-      "subscriptions_active": false,
-      "section_improvements_active": false
+      "premium_active": true,
+      "subscriptions_active": false
     }'
   )
 ON CONFLICT (key) DO NOTHING;
@@ -140,3 +139,53 @@ CREATE POLICY "payments_own_rows" ON public.payments
 -- app_config is read-only for all, write via service role only
 ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "config_read_all" ON public.app_config FOR SELECT USING (TRUE);
+
+-- ─── Atomic credit deduction functions ───────────────────────
+-- Returns the remaining balance after deduction, or -1 if no credit available.
+-- Called via supabase.rpc() from server-side routes.
+
+CREATE OR REPLACE FUNCTION public.deduct_credit(p_user_id TEXT)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_remaining INTEGER;
+BEGIN
+  UPDATE public.users
+  SET credits = credits - 1
+  WHERE id = p_user_id AND credits > 0
+  RETURNING credits INTO v_remaining;
+
+  IF NOT FOUND THEN
+    RETURN -1;
+  END IF;
+
+  RETURN v_remaining;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.deduct_premium_credit(p_user_id TEXT)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_remaining INTEGER;
+BEGIN
+  UPDATE public.users
+  SET premium_credits = premium_credits - 1
+  WHERE id = p_user_id AND premium_credits > 0
+  RETURNING premium_credits INTO v_remaining;
+
+  IF NOT FOUND THEN
+    RETURN -1;
+  END IF;
+
+  RETURN v_remaining;
+END;
+$$;
+
+-- ─── Migration: add premium_credits to existing installs ─────
+-- Run this if the table already exists without the column:
+-- ALTER TABLE public.users ADD COLUMN IF NOT EXISTS premium_credits INTEGER NOT NULL DEFAULT 0;

@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ScoreRequest, ScoreResponse, ScoreResponseSchema, JOB_ROLE_LABELS } from './schemas';
+import { ScoreRequest, ScoreResponse, ScoreResponseSchema, PremiumResponse, PremiumResponseSchema, JOB_ROLE_LABELS } from './schemas';
 import { getAIConfig } from './config';
 
 function buildSystemPrompt(jobRole?: string): string {
@@ -94,6 +94,104 @@ export async function scoreResume(req: ScoreRequest): Promise<ScoreResponse> {
   const result = ScoreResponseSchema.safeParse(parsed);
   if (!result.success) {
     console.error('[Scorer] Schema validation failed:', result.error.issues);
+    throw new Error('AI response did not match expected format');
+  }
+
+  return result.data;
+}
+
+// ── Premium enhancement — second-pass AI ─────────────────────────────────────
+// Takes the resume + initial score data and returns fully rewritten bullets,
+// section rewrites for low-scoring sections, and a summary of key changes.
+
+function buildPremiumSystemPrompt(): string {
+  return `You are a senior Indian resume writer. Your job is to transform a weak resume into a job-ready document that passes ATS filters and impresses human reviewers at Indian companies.
+
+You will receive:
+1. The original resume text
+2. The initial AI score report (scores per section, improvements needed, missing keywords)
+3. The target job description (if available)
+
+Your task:
+- Rewrite ALL experience and project bullet points to be quantified, action-verb led, and keyword-rich
+- Rewrite sections that scored below 7/10 (summary, skills, experience, projects)
+- For each rewritten bullet, explain WHY it is stronger than the original
+- Produce a list of the most impactful changes made
+
+Rules:
+- Never invent facts, numbers, or achievements not suggested by the original resume
+- Use realistic placeholders like "[X%]" or "[₹X L]" when a metric is missing but would strengthen the bullet
+- Write in clear, concise English appropriate for Indian corporate hiring
+- Bullet points must start with a strong action verb (Led, Built, Reduced, Improved, Designed, etc.)
+- Prioritise keywords from the job description and India-specific ATS systems (Naukri, LinkedIn India)
+
+Respond ONLY with a valid JSON object. No markdown, no explanation. Exact structure:
+{
+  "all_improved_bullets": [<ALL rewritten experience/project bullets — 4 to 12 items>],
+  "all_bullet_explanations": [<one sentence each, same order as all_improved_bullets>],
+  "section_rewrites": {
+    "summary": "<rewritten summary/objective — 2-3 sentences, role-specific>",
+    "skills": "<rewritten skills section — comma-separated, keyword-optimised for ATS>",
+    "experience": "<rewritten experience section highlights — key achievements only, not full section>",
+    "projects": "<rewritten projects section highlights — if applicable>"
+  },
+  "key_changes": [<3-6 strings describing the most impactful improvements made>]
+}`;
+}
+
+function buildPremiumUserPrompt(resumeText: string, scoreData: ScoreResponse, jobDescription?: string): string {
+  const scoreJson = JSON.stringify({
+    overall: scoreData.overall,
+    scores: scoreData.scores,
+    improvements: scoreData.improvements,
+    critical_keywords: scoreData.critical_keywords ?? [],
+    optional_keywords: scoreData.optional_keywords ?? [],
+  }, null, 2);
+
+  let prompt = `ORIGINAL RESUME:\n${resumeText}\n\nINITIAL SCORE REPORT:\n${scoreJson}`;
+  if (jobDescription?.trim()) {
+    prompt += `\n\nTARGET JOB DESCRIPTION:\n${jobDescription}`;
+  }
+  return prompt;
+}
+
+export async function premiumEnhanceResume(
+  resumeText: string,
+  scoreData: ScoreResponse,
+  jobDescription?: string,
+): Promise<PremiumResponse> {
+  const modelConfig = await getAIConfig();
+
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    timeout: 60000,
+    maxRetries: 2,
+  });
+
+  const completion = await client.chat.completions.create({
+    model:           modelConfig.name,
+    temperature:     0.3,
+    max_tokens:      3000,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: buildPremiumSystemPrompt() },
+      { role: 'user',   content: buildPremiumUserPrompt(resumeText, scoreData, jobDescription) },
+    ],
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error('No response from AI');
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('Invalid JSON from AI');
+  }
+
+  const result = PremiumResponseSchema.safeParse(parsed);
+  if (!result.success) {
+    console.error('[PremiumScorer] Schema validation failed:', result.error.issues);
     throw new Error('AI response did not match expected format');
   }
 

@@ -8,7 +8,7 @@ export default function Footer() {
               Scyrve<span className="text-accent">Me</span>
             </p>
             <p className="text-sm text-secondary font-body">
-              Free AI resume scoring for Indian job seekers
+              Fix your resume. Get shortlisted.
             </p>
           </div>
 

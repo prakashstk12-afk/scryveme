@@ -2,13 +2,14 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
-import type { ScoreResponse } from '@/lib/schemas';
+import type { ScoreResponse, PremiumResponse } from '@/lib/schemas';
 import { MAX_FILE_SIZE } from '@/lib/schemas';
 import ScoreResults from '@/components/ScoreResults';
 import DropZone from '@/components/DropZone';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import PreviewCard from '@/components/PreviewCard';
 import { getFingerprint } from '@/lib/fingerprint';
 import { DEMO_RESUME, DEMO_JD, DEMO_RESULT } from '@/data/sampleData';
 
@@ -72,12 +73,26 @@ export default function HomePage() {
   const [fileName, setFileName]       = useState('');
   const [error, setError]             = useState('');
   const [result, setResult]           = useState<ScoreResponse | null>(null);
+  const [tier, setTier]               = useState<string>('free');
+  const [creditUsed, setCreditUsed]   = useState(false);
+  const [premiumResult, setPremiumResult] = useState<PremiumResponse | null>(null);
   const [isDemo, setIsDemo]           = useState(false);
   const [remaining, setRemaining]     = useState<number | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [resetMs, setResetMs]         = useState(0);
   const [autoTriggerPayment, setAutoTriggerPayment] = useState(false);
-  const resultRef = useRef<HTMLDivElement>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [testAs, setTestAs]           = useState<'free' | 'paid' | 'ratelimited' | undefined>(undefined);
+  const resultRef  = useRef<HTMLDivElement>(null);
+  const uploadRef   = useRef<HTMLElement>(null);
+  const [uploadGlow, setUploadGlow] = useState(false);
+
+  function scrollToUpload() {
+    setInputMode('upload');
+    uploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setUploadGlow(true);
+    setTimeout(() => setUploadGlow(false), 1500);
+  }
 
   useEffect(() => {
     if (isSignedIn && sessionStorage.getItem('pendingPayment')) {
@@ -101,6 +116,7 @@ export default function HomePage() {
 
   function handleDemo() {
     setIsDemo(true);
+    setTier('elite'); // demo shows all Pro/Elite features
     setResult(DEMO_RESULT);
     setStep('results');
     setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
@@ -129,6 +145,7 @@ export default function HomePage() {
         body: JSON.stringify({
           resumeText: text,
           jobDescription: jobDescription.trim() || undefined,
+          ...(testAs && { testAs }),
         }),
       });
 
@@ -146,6 +163,11 @@ export default function HomePage() {
 
       if (!res.ok) throw new Error(data.error || 'Scoring failed. Please try again.');
 
+      const scoreData = data as ScoreResponse & { tier?: string; creditUsed?: boolean; isAdmin?: boolean };
+      setTier(scoreData.tier ?? 'free');
+      setCreditUsed(scoreData.creditUsed === true);
+      if (scoreData.isAdmin) setIsAdminUser(true);
+      setPremiumResult(null);
       setResult(data);
       setStep('results');
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
@@ -159,6 +181,9 @@ export default function HomePage() {
   function handleReset() {
     setStep('input');
     setResult(null);
+    setTier('free');
+    setCreditUsed(false);
+    setPremiumResult(null);
     setIsDemo(false);
     setResumeText('');
     setFileName('');
@@ -187,51 +212,76 @@ export default function HomePage() {
       <main className="max-w-3xl mx-auto px-4 pb-24">
 
         {/* Hero */}
-        <section className="pt-14 pb-10 text-center">
+        <section className="pt-14 pb-12 text-center">
           <div className="inline-flex items-center gap-2 bg-accent-glow text-accent text-xs font-display font-semibold px-4 py-1.5 rounded-full mb-6 border border-accent-border">
             <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
             Free · No sign-up required · Built for India
           </div>
 
-          <h1 className="font-display text-[2rem] sm:text-5xl font-bold leading-tight mb-4 px-2">
-            <span className="text-primary">See why your resume </span>
-            <span className="gradient-text">is getting rejected</span>
+          <h1 className="font-display text-[2rem] sm:text-5xl font-bold leading-tight mb-3 px-2">
+            <span className="text-primary">Fix the mistakes</span>
+            <span className="gradient-text"> that are getting your resume rejected</span>
           </h1>
 
+          <p className="text-xs font-display text-dim tracking-wide mb-5">ScyrveMe — From rejection to shortlist</p>
+
           <p className="font-body text-secondary text-base sm:text-lg max-w-lg mx-auto leading-relaxed mb-6">
-            Get a match score in 30 seconds. Fix your resume instantly with AI-powered feedback tailored to Indian hiring — Naukri, TCS, Infosys, startups, and more.
+            Most resumes get rejected before a recruiter sees them. Find out why in 30 seconds.
           </p>
 
-          {/* Trust bar */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-            {[
-              '✓ ATS compatibility check',
-              '✓ Missing keyword analysis',
-              '✓ AI-rewritten bullet points',
-            ].map((label) => (
-              <span key={label} className="bg-surface border border-border text-secondary px-3 py-1 rounded-full text-xs font-body">
-                {label}
-              </span>
-            ))}
+          {/* Primary CTA */}
+          <div className="flex flex-col items-center gap-3 mb-1">
+            <button
+              onClick={scrollToUpload}
+              className="inline-flex items-center gap-3 bg-accent text-white text-xl font-bold px-10 py-4 rounded-2xl transition-all duration-150 hover:scale-[1.03] hover:brightness-110 active:scale-[0.98]"
+              style={{ boxShadow: '0 0 0 1px rgba(64,128,255,0.4), 0 4px 24px rgba(64,128,255,0.35)' }}
+            >
+              Score my resume now
+            </button>
+
+            <p className="text-xs text-dim mt-0.5">Takes ~30 seconds · No signup required</p>
+
+            <button
+              onClick={handleDemo}
+              className="inline-flex items-center gap-2 text-sm font-display font-semibold text-accent border border-accent-border bg-accent-glow px-5 py-2.5 rounded-xl hover:brightness-110 transition-all"
+            >
+              Try with a sample resume
+            </button>
+
+            <div className="text-xs text-dim flex items-center gap-3">
+              <span>No data stored</span>
+              <span className="hidden sm:inline">· Built for India</span>
+            </div>
           </div>
 
-          {/* Demo CTA */}
-          <button
-            onClick={handleDemo}
-            className="inline-flex items-center gap-2 text-sm font-display font-semibold text-accent border border-accent-border bg-accent-glow px-5 py-2.5 rounded-xl hover:brightness-110 transition-all"
-          >
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <path d="M3 7.5L6.5 11L12 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Try with a sample resume — see results instantly
-          </button>
+          <p className="text-sm text-secondary font-body max-w-sm mx-auto mt-3 leading-relaxed">
+            ScyrveMe helps you turn resume rejection into interview opportunities.
+          </p>
 
-          <p className="text-xs text-dim mt-3">Used by students and professionals across India · No data stored</p>
+          {/* Preview */}
+          <PreviewCard result={DEMO_RESULT} />
         </section>
+
+        {/* Divider */}
+        {step !== 'results' && (
+          <div className="flex items-center gap-4 mb-6 px-1">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-dim font-display font-medium tracking-wide uppercase">Upload your resume</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+        )}
 
         {/* Input Form */}
         {step !== 'results' && (
-          <section className="card-glow mb-6">
+          <section
+            ref={uploadRef}
+            className={`card-glow mb-6 transition-all duration-700 ${
+              uploadGlow
+                ? 'ring-2 ring-accent/50'
+                : ''
+            }`}
+            style={uploadGlow ? { boxShadow: '0 0 32px rgba(64,128,255,0.18), 0 2px 20px rgba(0,0,0,0.5)' } : {}}
+          >
 
             {/* Resume Input */}
             <div className="mb-5">
@@ -357,10 +407,51 @@ export default function HomePage() {
         {/* Results */}
         {step === 'results' && result && (
           <div ref={resultRef}>
-            <ScoreResults result={result} isDemo={isDemo} onReset={handleReset} />
+            <ScoreResults
+              result={result}
+              isDemo={isDemo}
+              isAdmin={isAdminUser}
+              tier={tier}
+              creditUsed={creditUsed}
+              premiumResult={premiumResult}
+              onPremiumReady={setPremiumResult}
+              resumeText={resumeText}
+              jobDescription={jobDescription}
+              onReset={handleReset}
+            />
           </div>
         )}
       </main>
+
+      {/* Admin test panel — only visible to admin emails */}
+      {isAdminUser && (
+        <div className="fixed bottom-4 right-4 z-40 bg-elevated border border-border-bright rounded-2xl p-3 shadow-2xl text-xs font-mono">
+          <p className="text-dim mb-2 font-display font-semibold text-[10px] uppercase tracking-wider">Admin test mode</p>
+          <div className="flex flex-col gap-1.5">
+            {(
+              [
+                { label: 'Normal (admin)',  value: undefined },
+                { label: 'Free tier',       value: 'free'        },
+                { label: 'Paid (₹19)',      value: 'paid'        },
+                { label: 'Rate limited',    value: 'ratelimited' },
+              ] as const
+            ).map(({ label, value }) => (
+              <button
+                key={label}
+                onClick={() => setTestAs(value)}
+                className={`px-3 py-1.5 rounded-lg text-left transition-colors ${
+                  testAs === value
+                    ? 'bg-accent text-white'
+                    : 'bg-surface text-secondary hover:text-primary hover:bg-surface/80'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-dim text-[10px] mt-2">Re-score to apply</p>
+        </div>
+      )}
 
       <Footer />
     </div>

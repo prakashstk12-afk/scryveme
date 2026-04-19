@@ -34,12 +34,12 @@ export default function AuthButton() {
   return (
     <div className="flex items-center gap-2">
       <SignInButton mode="modal">
-        <button className="text-xs font-display font-medium text-secondary hover:text-primary px-3 py-1.5 rounded-lg border border-border hover:border-border-bright transition-all">
+        <button className="text-xs font-display font-medium text-dim hover:text-secondary px-3 py-1.5 rounded-lg border border-border transition-all">
           Sign in
         </button>
       </SignInButton>
       <SignUpButton mode="modal">
-        <button className="text-xs font-display font-semibold bg-accent text-white px-4 py-1.5 rounded-lg hover:brightness-110 transition-all">
+        <button className="text-xs font-display font-medium text-dim border border-border px-3 py-1.5 rounded-lg hover:text-secondary transition-all">
           Sign up
         </button>
       </SignUpButton>

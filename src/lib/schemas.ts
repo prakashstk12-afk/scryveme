@@ -68,4 +68,19 @@ export const ScoreResponseSchema = z.object({
 
 export type ScoreResponse = z.infer<typeof ScoreResponseSchema>;
 
+// Premium enhancement response — second-pass AI output
+export const PremiumResponseSchema = z.object({
+  all_improved_bullets:      z.array(z.string()).min(1).max(12),
+  all_bullet_explanations:   z.array(z.string()).min(1).max(12),
+  section_rewrites: z.object({
+    summary:    z.string().optional(),
+    skills:     z.string().optional(),
+    experience: z.string().optional(),
+    projects:   z.string().optional(),
+  }),
+  key_changes: z.array(z.string()).min(1).max(6),
+});
+
+export type PremiumResponse = z.infer<typeof PremiumResponseSchema>;
+
 export { MAX_FILE_SIZE };
