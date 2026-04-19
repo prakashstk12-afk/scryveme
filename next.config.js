@@ -21,14 +21,14 @@ const nextConfig = {
               // Clerk CDN + your Clerk instance domain (wildcard covers dev & prod instances)
               // Razorpay checkout script
               // FingerprintJS CDN
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://clerk.scryveme.in https://cdn.jsdelivr.net https://checkout.razorpay.com https://fpjscdn.net",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://clerk.scryveme.in https://cdn.jsdelivr.net https://checkout.razorpay.com https://fpjscdn.net https://challenges.cloudflare.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://checkout.razorpay.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.clerk.com https://img.clerk.com https://checkout.razorpay.com",
-              // Clerk API (dev wildcard + prod custom domain) + Supabase + OpenAI + Razorpay + FingerprintJS
-              "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.scryveme.in https://api.openai.com https://*.supabase.co https://livekit.razorpay.com https://api.razorpay.com https://fpjscdn.net https://*.fpjs.io",
-              // Razorpay opens payment iframe
-              "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+              // Clerk API (dev wildcard + prod custom domain) + Supabase + OpenAI + Razorpay + FingerprintJS + Cloudflare Turnstile
+              "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.scryveme.in https://api.openai.com https://*.supabase.co https://livekit.razorpay.com https://api.razorpay.com https://fpjscdn.net https://*.fpjs.io https://challenges.cloudflare.com",
+              // Razorpay payment iframe + Cloudflare Turnstile CAPTCHA (Clerk production)
+              "frame-src https://api.razorpay.com https://checkout.razorpay.com https://challenges.cloudflare.com",
               // Clerk spawns Web Workers from blob URLs for its internal processing
               "worker-src 'self' blob:",
               "frame-ancestors 'none'",
