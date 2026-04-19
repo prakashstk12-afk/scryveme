@@ -29,6 +29,8 @@ const nextConfig = {
               "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://api.openai.com https://*.supabase.co https://livekit.razorpay.com https://api.razorpay.com https://fpjscdn.net https://*.fpjs.io",
               // Razorpay opens payment iframe
               "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+              // Clerk spawns Web Workers from blob URLs for its internal processing
+              "worker-src 'self' blob:",
               "frame-ancestors 'none'",
             ].join('; '),
           },
