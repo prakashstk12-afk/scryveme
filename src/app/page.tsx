@@ -3,33 +3,82 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import type { ScoreResponse } from '@/lib/schemas';
-import { JOB_ROLE_LABELS, JOB_ROLES, MAX_FILE_SIZE } from '@/lib/schemas';
+import { MAX_FILE_SIZE } from '@/lib/schemas';
 import ScoreResults from '@/components/ScoreResults';
 import DropZone from '@/components/DropZone';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { getFingerprint } from '@/lib/fingerprint';
+import { DEMO_RESUME, DEMO_JD, DEMO_RESULT } from '@/data/sampleData';
 
 type Step = 'input' | 'loading' | 'results';
+
+const LOADING_STEPS = [
+  'Reading your resume…',
+  'Analyzing job description…',
+  'Extracting missing keywords…',
+  'Generating actionable insights…',
+];
+
+function LoadingSteps() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const delays = [900, 1900, 3200];
+    const timers = delays.map((d, i) => setTimeout(() => setActive(i + 1), d));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="space-y-3.5 w-full max-w-xs mx-auto">
+      {LOADING_STEPS.map((label, i) => {
+        const done    = i < active;
+        const current = i === active;
+        return (
+          <div
+            key={i}
+            className={`flex items-center gap-3 transition-all duration-500 ${i > active ? 'opacity-25' : 'opacity-100'}`}
+          >
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+              done    ? 'bg-success'                            :
+              current ? 'bg-accent border-2 border-accent/40'  :
+              'bg-surface border border-border'
+            }`}>
+              {done ? (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M1.5 5l2.5 2.5 5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : current ? (
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+              ) : null}
+            </div>
+            <span className={`text-sm font-body ${done || current ? 'text-primary' : 'text-dim'}`}>
+              {label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function HomePage() {
   const { isSignedIn }                = useUser();
   const [step, setStep]               = useState<Step>('input');
   const [resumeText, setResumeText]   = useState('');
-  const [jobRole, setJobRole]         = useState<string>('it_fresher');
   const [jobDescription, setJobDescription] = useState('');
   const [inputMode, setInputMode]     = useState<'upload' | 'paste'>('upload');
   const [fileName, setFileName]       = useState('');
   const [error, setError]             = useState('');
   const [result, setResult]           = useState<ScoreResponse | null>(null);
+  const [isDemo, setIsDemo]           = useState(false);
   const [remaining, setRemaining]     = useState<number | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [resetMs, setResetMs]         = useState(0);
   const [autoTriggerPayment, setAutoTriggerPayment] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  // After returning from sign-in, auto-show upgrade prompt and trigger payment
   useEffect(() => {
     if (isSignedIn && sessionStorage.getItem('pendingPayment')) {
       setResetMs(Date.now() + 86_400_000);
@@ -50,6 +99,13 @@ export default function HomePage() {
     setFileName('');
   }, []);
 
+  function handleDemo() {
+    setIsDemo(true);
+    setResult(DEMO_RESULT);
+    setStep('results');
+    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
+
   async function handleSubmit() {
     setError('');
     const text = resumeText.trim();
@@ -58,10 +114,10 @@ export default function HomePage() {
       return;
     }
 
+    setIsDemo(false);
     setStep('loading');
 
     try {
-      // Get browser fingerprint for dual rate-limit check
       const fp = await getFingerprint();
 
       const res = await fetch('/api/score', {
@@ -72,7 +128,6 @@ export default function HomePage() {
         },
         body: JSON.stringify({
           resumeText: text,
-          jobRole,
           jobDescription: jobDescription.trim() || undefined,
         }),
       });
@@ -104,6 +159,7 @@ export default function HomePage() {
   function handleReset() {
     setStep('input');
     setResult(null);
+    setIsDemo(false);
     setResumeText('');
     setFileName('');
     setJobDescription('');
@@ -129,61 +185,57 @@ export default function HomePage() {
       )}
 
       <main className="max-w-3xl mx-auto px-4 pb-24">
+
         {/* Hero */}
-        <section className="pt-16 pb-12 text-center">
-          <div className="inline-flex items-center gap-2 bg-accent-glow text-accent text-xs font-display font-semibold px-4 py-1.5 rounded-full mb-7 border border-accent-border">
+        <section className="pt-14 pb-10 text-center">
+          <div className="inline-flex items-center gap-2 bg-accent-glow text-accent text-xs font-display font-semibold px-4 py-1.5 rounded-full mb-6 border border-accent-border">
             <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
-            Free · No sign-up · Built for India
+            Free · No sign-up required · Built for India
           </div>
 
-          <h1 className="font-display text-5xl sm:text-6xl font-bold leading-tight mb-5">
-            <span className="text-primary">Is your resume</span>
-            <br />
-            <span className="gradient-text">job-market ready?</span>
+          <h1 className="font-display text-[2rem] sm:text-5xl font-bold leading-tight mb-4 px-2">
+            <span className="text-primary">See why your resume </span>
+            <span className="gradient-text">is getting rejected</span>
           </h1>
 
-          <p className="font-body text-secondary text-lg max-w-xl mx-auto leading-relaxed mb-8">
-            AI-powered resume scoring tailored to Indian hiring — Naukri, LinkedIn India, campus
-            placements, TCS, Infosys, startups, and more.
+          <p className="font-body text-secondary text-base sm:text-lg max-w-lg mx-auto leading-relaxed mb-6">
+            Get a match score in 30 seconds. Fix your resume instantly with AI-powered feedback tailored to Indian hiring — Naukri, TCS, Infosys, startups, and more.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {['ATS compatibility check', 'India-specific tips', 'Results in 30 seconds'].map((label) => (
-              <span key={label} className="flex items-center gap-2 bg-surface border border-border text-secondary px-4 py-1.5 rounded-full text-xs">
-                <span className="text-success font-bold text-sm">✓</span>
+          {/* Trust bar */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+            {[
+              '✓ ATS compatibility check',
+              '✓ Missing keyword analysis',
+              '✓ AI-rewritten bullet points',
+            ].map((label) => (
+              <span key={label} className="bg-surface border border-border text-secondary px-3 py-1 rounded-full text-xs font-body">
                 {label}
               </span>
             ))}
           </div>
+
+          {/* Demo CTA */}
+          <button
+            onClick={handleDemo}
+            className="inline-flex items-center gap-2 text-sm font-display font-semibold text-accent border border-accent-border bg-accent-glow px-5 py-2.5 rounded-xl hover:brightness-110 transition-all"
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M3 7.5L6.5 11L12 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Try with a sample resume — see results instantly
+          </button>
+
+          <p className="text-xs text-dim mt-3">Used by students and professionals across India · No data stored</p>
         </section>
 
         {/* Input Form */}
         {step !== 'results' && (
           <section className="card-glow mb-6">
-            {/* Job Role */}
-            <div className="mb-6">
-              <label className="section-label block mb-3">I am applying for</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {JOB_ROLES.map((role) => (
-                  <button
-                    key={role}
-                    onClick={() => setJobRole(role)}
-                    className={`px-3 py-2.5 rounded-xl border text-sm font-body font-medium transition-all duration-150 text-left
-                      ${jobRole === role
-                        ? 'bg-accent text-white border-accent-border'
-                        : 'bg-surface text-secondary border-border hover:border-border-bright hover:text-primary hover:bg-subtle'
-                      }`}
-                    style={jobRole === role ? { boxShadow: '0 4px 16px rgba(64,128,255,0.25)' } : {}}
-                  >
-                    {JOB_ROLE_LABELS[role]}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* Resume Input */}
             <div className="mb-5">
-              <label className="section-label block mb-3">Your resume</label>
+              <label className="section-label block mb-3">Upload your resume</label>
               <div className="flex gap-1 mb-4 p-1 bg-surface rounded-xl border border-border">
                 {(['upload', 'paste'] as const).map((mode) => (
                   <button
@@ -205,7 +257,7 @@ export default function HomePage() {
               ) : (
                 <textarea
                   className="input-field min-h-[220px] resize-y font-mono text-sm"
-                  placeholder="Paste your resume text here... Works great for scanned PDFs that don't upload correctly."
+                  placeholder="Paste your resume text here…"
                   value={resumeText}
                   onChange={(e) => { setResumeText(e.target.value); setError(''); }}
                   maxLength={15000}
@@ -221,19 +273,18 @@ export default function HomePage() {
             {/* JD */}
             <div className="mb-6">
               <label className="section-label block mb-2">
-                Job description{' '}
-                <span className="normal-case font-normal text-dim">(optional — unlocks JD match %)</span>
+                Paste the job description{' '}
+                <span className="normal-case font-normal text-dim">(optional — unlocks JD match % + missing keywords)</span>
               </label>
               <textarea
-                className="input-field min-h-[100px] resize-y text-sm"
-                placeholder="Paste the job description you're targeting for a personalised match score..."
+                className="input-field min-h-[110px] resize-y text-sm"
+                placeholder="Paste the job description you're targeting… The AI will tell you exactly which keywords are missing from your resume."
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
                 maxLength={3000}
               />
             </div>
 
-            {/* Error */}
             {error && (
               <div className="mb-4 bg-danger-bg border border-danger-border text-danger rounded-xl px-4 py-3 text-sm flex items-start gap-2">
                 <span className="flex-shrink-0 mt-0.5 font-bold">⚠</span>
@@ -241,7 +292,6 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Submit */}
             <button
               className="btn-primary w-full text-base py-4 flex items-center justify-center gap-2"
               onClick={handleSubmit}
@@ -250,10 +300,9 @@ export default function HomePage() {
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M3 9h12M9 3l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Score my resume
+              Analyse my resume
             </button>
 
-            {/* Rate limit counter */}
             {remaining !== null && remaining >= 0 && (
               <p className="text-xs text-dim text-center mt-3 flex items-center justify-center gap-1.5">
                 <span className={remaining > 0 ? 'text-success' : 'text-warning'}>●</span>
@@ -262,7 +311,6 @@ export default function HomePage() {
               </p>
             )}
 
-            {/* Trust row */}
             <div className="mt-5 pt-5 border-t border-border flex flex-wrap items-center justify-center gap-5 text-xs text-dim">
               <span className="flex items-center gap-1.5">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -290,34 +338,26 @@ export default function HomePage() {
 
         {/* Loading */}
         {step === 'loading' && (
-          <div className="card-glow flex flex-col items-center py-20 gap-5 mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-accent-glow border border-accent-border flex items-center justify-center mb-1">
+          <div className="card-glow flex flex-col items-center py-16 gap-8 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-accent-glow border border-accent-border flex items-center justify-center">
               <div className="flex gap-1.5 items-center">
-                <div className="w-2 h-2 bg-accent rounded-full dot-1" />
-                <div className="w-2 h-2 bg-accent rounded-full dot-2" />
-                <div className="w-2 h-2 bg-accent rounded-full dot-3" />
+                <div className="w-1.5 h-1.5 bg-accent rounded-full dot-1" />
+                <div className="w-1.5 h-1.5 bg-accent rounded-full dot-2" />
+                <div className="w-1.5 h-1.5 bg-accent rounded-full dot-3" />
               </div>
             </div>
-            <div className="text-center">
-              <p className="font-display font-semibold text-primary text-xl">Analysing your resume…</p>
-              <p className="text-sm text-secondary mt-2">
-                Checking ATS compatibility · Scoring 7 sections · Finding India-specific tips
-              </p>
+            <div className="text-center mb-2">
+              <p className="font-display font-semibold text-primary text-xl mb-1">Analysing your resume…</p>
+              <p className="text-sm text-secondary">This takes about 20–30 seconds</p>
             </div>
-            <div className="flex flex-wrap gap-2 justify-center mt-1">
-              {['ATS Check', 'Section Scoring', 'India Tips', 'JD Matching'].map((tag) => (
-                <span key={tag} className="text-xs text-dim bg-surface border border-border px-3 py-1.5 rounded-full shimmer-tag">
-                  {tag}
-                </span>
-              ))}
-            </div>
+            <LoadingSteps />
           </div>
         )}
 
         {/* Results */}
         {step === 'results' && result && (
           <div ref={resultRef}>
-            <ScoreResults result={result} jobRole={jobRole} onReset={handleReset} />
+            <ScoreResults result={result} isDemo={isDemo} onReset={handleReset} />
           </div>
         )}
       </main>

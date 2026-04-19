@@ -30,7 +30,7 @@ export const ScoreRequestSchema = z.object({
       (t) => t.trim().split(/\s+/).length >= 50,
       'Resume must contain at least 50 words'
     ),
-  jobRole: z.enum(JOB_ROLES),
+  jobRole: z.enum(JOB_ROLES).optional(),
   jobDescription: z
     .string()
     .max(3000, 'Job description must be under 3,000 characters')
@@ -57,7 +57,13 @@ export const ScoreResponseSchema = z.object({
   improvements: z.array(z.string()).min(1).max(6),
   india_specific_tips: z.array(z.string()).min(1).max(4),
   ats_verdict: z.enum(['Pass', 'Borderline', 'Fail']),
-  jd_match_percent: z.number().min(0).max(100).optional(),
+  jd_match_percent:    z.number().min(0).max(100).optional(),
+  missing_keywords:    z.array(z.string()).max(15).optional(),
+  critical_keywords:   z.array(z.string()).max(8).optional(),
+  optional_keywords:   z.array(z.string()).max(8).optional(),
+  improved_bullets:    z.array(z.string()).max(4).optional(),
+  bullet_explanations: z.array(z.string()).max(4).optional(),
+  projected_score:     z.number().min(0).max(100).optional(),
 });
 
 export type ScoreResponse = z.infer<typeof ScoreResponseSchema>;
