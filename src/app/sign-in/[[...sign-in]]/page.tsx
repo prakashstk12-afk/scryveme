@@ -5,7 +5,7 @@ export default function SignInPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16">
       <div className="mb-8 text-center">
         <a href="/" className="font-display font-bold text-2xl text-primary">
-          Scyrve<span className="text-accent">Me</span>
+          scryve<span className="text-accent">Me</span>
         </a>
         <p className="text-secondary text-sm mt-2">Sign in to access your scores and subscription</p>
       </div>

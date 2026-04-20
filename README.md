@@ -1,4 +1,4 @@
-# ScyrveMe — AI Resume Scorer for India
+# scryveMe — AI Resume Scorer for India
 
 Free, no-login AI resume scorer built for the Indian job market.
 

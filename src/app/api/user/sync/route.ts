@@ -13,6 +13,7 @@ interface ClerkUserEvent {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[UserSync] Webhook received');
   const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
   if (!webhookSecret) {
     console.error('[UserSync] CLERK_WEBHOOK_SECRET not set');
@@ -38,7 +39,8 @@ export async function POST(request: NextRequest) {
       'svix-timestamp': svixTimestamp,
       'svix-signature': svixSignature,
     }) as ClerkUserEvent;
-  } catch {
+  } catch (err) {
+    console.error('[UserSync] Svix verification failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 

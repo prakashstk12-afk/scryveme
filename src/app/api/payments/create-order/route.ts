@@ -3,8 +3,8 @@ import { auth } from '@clerk/nextjs/server';
 import { getRazorpay, PRICES, PriceKey } from '@/lib/razorpay-server';
 
 const PRODUCT_DESCRIPTIONS: Record<PriceKey, string> = {
-  pay_per_use: '1 Resume Score Credit — ScyrveMe',
-  premium:     '1 Premium Resume Enhancement — ScyrveMe',
+  pay_per_use: '1 Resume Score Credit — scryveMe',
+  premium:     '1 Premium Resume Enhancement — scryveMe',
 };
 
 export async function POST(request: NextRequest) {

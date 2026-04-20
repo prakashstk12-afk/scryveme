@@ -13,7 +13,7 @@ export default function Header() {
             </svg>
           </div>
           <span className="font-display font-bold text-xl text-primary tracking-tight">
-            Scyrve<span className="text-accent">Me</span>
+            scryve<span className="text-accent">Me</span>
           </span>
         </Link>
 

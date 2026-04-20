@@ -1,5 +1,5 @@
 -- ============================================================
--- ScyrveMe — Supabase Schema
+-- scryveMe — Supabase Schema
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ============================================================
 

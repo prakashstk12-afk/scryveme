@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="text-center sm:text-left">
             <p className="font-display font-bold text-primary mb-1">
-              Scyrve<span className="text-accent">Me</span>
+              scryve<span className="text-accent">Me</span>
             </p>
             <p className="text-sm text-secondary font-body">
               Fix your resume. Get shortlisted.
@@ -33,7 +33,7 @@ export default function Footer() {
 
         <div className="mt-6 pt-6 border-t border-border text-center">
           <p className="text-xs text-dim">
-            © {new Date().getFullYear()} ScyrveMe · Results are AI-generated and for guidance only.
+            © {new Date().getFullYear()} scryveMe · Results are AI-generated and for guidance only.
           </p>
         </div>
       </div>

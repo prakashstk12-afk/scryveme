@@ -223,7 +223,7 @@ export default function HomePage() {
             <span className="gradient-text"> that are getting your resume rejected</span>
           </h1>
 
-          <p className="text-xs font-display text-dim tracking-wide mb-5">ScyrveMe — From rejection to shortlist</p>
+          <p className="text-xs font-display text-dim tracking-wide mb-5">scryveMe — From rejection to shortlist</p>
 
           <p className="font-body text-secondary text-base sm:text-lg max-w-lg mx-auto leading-relaxed mb-6">
             Most resumes get rejected before a recruiter sees them. Find out why in 30 seconds.
@@ -255,7 +255,7 @@ export default function HomePage() {
           </div>
 
           <p className="text-sm text-secondary font-body max-w-sm mx-auto mt-3 leading-relaxed">
-            ScyrveMe helps you turn resume rejection into interview opportunities.
+            scryveMe helps you turn resume rejection into interview opportunities.
           </p>
 
           {/* Preview */}

@@ -137,7 +137,7 @@ export default function PayWithRazorpay({
       key:         rzpKey,
       amount,
       currency,
-      name:        'ScyrveMe',
+      name:        'scryveMe',
       description: type === 'premium' ? '1 Premium Resume Enhancement' : '1 Resume Score Credit',
       order_id:    orderId,
       prefill: {

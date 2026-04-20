@@ -16,7 +16,7 @@ export default function PreviewCard({ result }: { result?: Partial<ScoreResponse
     >
       {/* Heading */}
       <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
-        <p className="text-sm font-display font-semibold text-primary">Here&apos;s how ScyrveMe improves your resume in 30 seconds</p>
+        <p className="text-sm font-display font-semibold text-primary">Here&apos;s how scryveMe improves your resume in 30 seconds</p>
         <span className="text-xs text-dim bg-elevated border border-border rounded-full px-2.5 py-0.5">Example result</span>
       </div>
 
